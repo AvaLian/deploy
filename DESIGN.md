@@ -38,4 +38,4 @@
 
 ## 技术选型
 
-**Vue** + **Webpack** + **KoaJs** + **TypeScript**
+**Vue** + **Webpack** + **KoaJs** + **ES2015**
