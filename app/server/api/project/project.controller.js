@@ -1,8 +1,12 @@
 import Project from './project.model.js';
 
 export async function getAllProjects (ctx) {
-  const projects = await Project.find({}).sort({createTime: 'desc'});
-  ctx.body = { errCode: 0, errMsg: 'success', data: projects };
+  try {
+    const projects = await Project.find({}).sort({createTime: 'desc'});
+    ctx.body = { errCode: 0, errMsg: 'success', data: projects };
+  } catch (err) {
+    ctx.throw(422, err.message);
+  }
 };
 
 export async function addProject (ctx) {
@@ -15,4 +19,14 @@ export async function addProject (ctx) {
     ctx.throw(422, err.message);
   }
   ctx.body = {errCode: 0, errMsg: 'success'};
+};
+
+export async function getProjectById (ctx) {
+  let id = ctx.params.id;
+  try {
+    const project = await Project.findById(id);
+    ctx.body = { errCode: 0, errMsg: 'success', data: project };
+  } catch (err) {
+    ctx.throw(422, err.message);
+  }
 };

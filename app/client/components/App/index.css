@@ -204,7 +204,7 @@ html {
   -webkit-font-smoothing: antialiased
 }
 body {
-  font-family: Helvetica,STHeiti STXihei,Microsoft JhengHei,Microsoft YaHei,Arial
+  font-family: Helvetica,STHeiti STXihei,Microsoft JhengHei,Microsoft YaHei,Arial;
 }
 
 a {
@@ -239,7 +239,7 @@ img {
 .viewer {
   padding: 0 24px;
 }
-.viewer>h3 {
+.viewer>h2 {
   font-size: 22px;
   margin-bottom: 12px;
 }

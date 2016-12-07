@@ -1,4 +1,5 @@
 <template>
-  <div class="home">
-  </div>
+  <section class="home">
+    这是首页
+  </section>
 </template>

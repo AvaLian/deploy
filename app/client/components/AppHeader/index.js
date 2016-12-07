@@ -11,17 +11,20 @@ export default {
         {
           type: 'home',
           link: '/',
-          name: '首页'
+          name: '首页',
+          exact: true
         },
         {
           type: 'projectList',
           link: '/projectList',
-          name: '项目'
+          name: '项目',
+          exact: false
         },
         {
           type: 'records',
           link: '/records',
-          name: '操作记录'
+          name: '操作记录',
+          exact: false
         }
       ]
     }
@@ -30,7 +33,7 @@ export default {
     const items = this.nav.map(item => {
       return (
         <li class={{header_nav_item: true}}>
-          <router-link to={item.link} active-class="active" class="header_nav_link" exact>
+          <router-link to={item.link} active-class="active" class="header_nav_link" exact={item.exact}>
             {item.name}
           </router-link>
         </li>
@@ -38,7 +41,7 @@ export default {
     });
     return (
       <header class="header">
-        <h1 class="header_title">统一上线平台</h1>
+        <h1 class="header_title"><router-link to="/" class="header_title_link" exact>统一上线平台</router-link></h1>
         <nav class="header_nav">
           <ul class="header_nav_list">
             {items}

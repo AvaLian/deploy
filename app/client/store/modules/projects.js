@@ -20,7 +20,7 @@ const mutations = {
 
 const actions = {
   async getProjectList({ commit }) {
-    let res = await Vue.http.get(INTERFACE.GET_PROJECT_LIST);
+    let res = await Vue.http.get(INTERFACE.PROJECTS);
     commit(PROJECT_LIST, { projectList: res.body.data});
   },
 
