@@ -1,3 +1,5 @@
+import './index.css';
+
 export default {
   name: 'project-list',
   props: {
@@ -9,9 +11,11 @@ export default {
     let projectList = this.projectList || [];
     const items = projectList.map(item => {
       return (
-        <li class='project_list_item'>
-          {item.name}
-        </li>
+        <el-card class="project_item_wrapper">
+          <li class='project_item'>
+            {item.name}
+          </li>
+        </el-card>
       );
     });
 

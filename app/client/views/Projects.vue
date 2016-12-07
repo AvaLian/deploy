@@ -1,7 +1,6 @@
 <template>
-  <div class="projects">
-    <h3>项目列表</h3>
-    <el-button type="success" icon="plus" @click="showAddProjectDialog">新增项目</el-button>
+  <section class="projects">
+    <h3 class="clearfix">项目列表<el-button class="projects_add" type="success" icon="plus" @click="showAddProjectDialog">新增项目</el-button></h3>
     <project-list :projectList="projectList"></project-list>
     <el-dialog title="新增项目" v-model="dialogVisible">
       <el-form :model="newProject" ref="newProjectForm" label-width="80px">
@@ -29,7 +28,7 @@
         <el-button type="primary" @click="addProjectSubmit">确 定</el-button>
       </span>
     </el-dialog>
-  </div>
+  </section>
 </template>
 
 <script>
@@ -77,3 +76,9 @@
     }
   };
 </script>
+
+<style>
+  .projects_add {
+    float: right;
+  }
+</style>

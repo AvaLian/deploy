@@ -196,7 +196,6 @@ ins {
 html {
   font-size: 1em;
   line-height: 1.5;
-  background-color: #efefef;
   color: rgba(0,0,0,.87);
   min-height: 100%;
   -webkit-text-size-adjust: 100%;
@@ -221,7 +220,26 @@ img {
   max-width: 100%;
   font-style: italic
 }
+.clearfix:after {
+  visibility: hidden;
+  clear: both;
+  display: block;
+  content: ".";
+  height: 0
+}
+
+.clearfix {
+  *zoom:1
+}
 
 .container {
   padding: 80px 0 0;
+}
+
+.viewer {
+  padding: 0 24px;
+}
+.viewer>h3 {
+  font-size: 22px;
+  margin-bottom: 12px;
 }

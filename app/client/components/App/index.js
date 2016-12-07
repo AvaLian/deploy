@@ -10,7 +10,9 @@ export default {
     return (
       <div id="app">
         <app-header></app-header>
-        <router-view class="container"></router-view>
+        <div class="container">
+          <router-view class="viewer"></router-view>
+        </div>
       </div>
     )
   }
