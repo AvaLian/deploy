@@ -18,6 +18,7 @@ export async function getAllProjects (ctx) {
 export async function addProject (ctx) {
   let body = ctx.request.body;
   body.createTime = new Date();
+  body.buildCount = 0;
   const project = new Project(body);
   try {
     await project.save();
@@ -48,11 +49,18 @@ export async function buildProjectById (ctx) {
     }
     const projectPath = path.join(repoDir, project.name);
     fse.removeSync(projectPath);
+    const buildStartTime = new Date().getTime();
     // 先拉取git项目
     const gitClone = shelljs.exec(`git clone ${sourceRepo} ${projectPath}`, { silent: true, async: false });
     const cd = shelljs.cd(projectPath);
     // 执行ath编译
     const athBuild = shelljs.exec(`ath build --release`, { silent: true });
+    const buildEndTime = new Date().getTime();
+    project.lastBuildDate = new Date;
+    project.buildDuration = buildEndTime - buildStartTime;
+    project.buildCount = isNaN(project.buildCount) ? 0 : project.buildCount;
+    project.buildCount++;
+    await project.save();
     shelljs.cd(config.root);
     ctx.body = {
       errCode: 0,
