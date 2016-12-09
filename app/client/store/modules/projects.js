@@ -4,6 +4,7 @@ import { INTERFACE } from '../../config';
 const PROJECT_LIST = 'PROJECT_LIST';
 const ADD_PROJECT = 'ADD_PROJECT';
 
+
 const state = {
   projectList: []
 };

@@ -23,11 +23,16 @@
     ]),
 
     methods: {
-      async buildProjectById() {
+      async buildProjectById () {
         const id = this.$route.params.id;
         this.isBuilding = true;
         await this.buildProject({ id });
         this.isBuilding = false;
+      },
+
+      fetchData () {
+        const id = this.$route.params.id;
+        this.getProject({ id });
       },
       ...mapActions([
         'getProject',
@@ -35,9 +40,12 @@
       ])
     },
 
-    mounted() {
-      const id = this.$route.params.id;
-      this.getProject({ id });
+    created () {
+      this.fetchData();
+    },
+
+    watch: {
+      '$route': 'fetchData'
     }
   }
 </script>

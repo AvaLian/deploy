@@ -25,7 +25,13 @@ const router =  new Router({
     },
     {
       path: '/projectList/:id',
-      component: Project,
+      component: Projects,
+      children: [
+        {
+          path: '',
+          component: Project
+        }
+      ],
       meta: {
         title: '统一上线平台 - 项目详情'
       }

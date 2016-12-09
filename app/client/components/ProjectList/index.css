@@ -1,3 +1,29 @@
-.project_item {
-  margin-bottom: 12px;
+.project_list {
+  border-bottom: 6px solid #f1f1f1;
+  background-color: #f1f1f1;
+}
+.project_info {
+  height: auto;
+  padding: 12px 8px 12px 24px;
+  margin-bottom: 6px;
+  background-color: #fff;
+  border-radius: 0;
+  background: -webkit-linear-gradient(left,#58B7FF 0,#58B7FF 8px,#fff 8px,#fff 100%) no-repeat;
+  background: linear-gradient(to right,#58B7FF 0,#58B7FF 8px,#fff 8px,#fff 100%) no-repeat;
+}
+.project_title {
+  width: 72%;
+  white-space: nowrap;
+  overflow: hidden;
+  display: inline-block;
+  margin-bottom: .7em;
+  padding-left: 1px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.project_title, .project_title a {
+  color: #1F2D3D;
+}
+.project_item:last-child .project_info {
+  margin-bottom: 0;
 }

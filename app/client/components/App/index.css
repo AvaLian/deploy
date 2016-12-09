@@ -203,8 +203,12 @@ html {
   -moz-osx-font-smoothing: grayscale;
   -webkit-font-smoothing: antialiased
 }
+a, body, button, html {
+  color: #666;
+}
 body {
   font-family: Helvetica,STHeiti STXihei,Microsoft JhengHei,Microsoft YaHei,Arial;
+  font-size: 14px;
 }
 
 a {
@@ -233,11 +237,10 @@ img {
 }
 
 .container {
-  padding: 80px 0 0;
+  padding: 60px 0 0;
 }
 
 .viewer {
-  padding: 0 24px;
 }
 .viewer>h2 {
   font-size: 22px;

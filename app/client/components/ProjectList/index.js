@@ -12,18 +12,11 @@ export default {
     const items = projectList.map(item => {
       return (
         <li class='project_item'>
-          <el-card class="project_item_wrapper">
-            <div slot="header" class="clearfix">
-              <span>{item.name}</span>
-              <router-link to={'/projectList/' + item._id} exact>查看详情</router-link>
-            </div>
-            <section class="project_item_main">
-              <h3 class="project_item_main_alias">{item.alias}</h3>
-              <div class="project_item_main_info">
-
-              </div>
-            </section>
-          </el-card>
+          <div class="project_info">
+            <h4 class="project_title"><span class="project_status"></span><router-link to={`/projectList/${item._id}`} exact>{item.name}</router-link></h4>
+            <p class="project_buildtime">编译时间:{item.lastBuildDate || '-'}</p>
+            <p class="project_buildduration">编译耗时:{item.buildDuration || '-'}</p>
+          </div>
         </li>
       );
     });

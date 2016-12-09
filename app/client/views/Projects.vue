@@ -1,7 +1,12 @@
 <template>
-  <section class="projects">
-    <h2 class="clearfix">项目列表<el-button class="projects_add" type="success" icon="plus" @click="showAddProjectDialog">新增项目</el-button></h2>
-    <project-list :projectList="projectList"></project-list>
+  <div class="projects clearfix">
+    <aside class="projects_aside">
+      <h3 class="projects_aside_title">我的项目<el-button class="projects_add" type="text" icon="plus" @click="showAddProjectDialog">新增项目</el-button></h3>
+      <project-list :projectList="projectList"></project-list>
+    </aside>
+    <div class="projects_main">
+      <router-view></router-view>
+    </div>
     <el-dialog title="新增项目" v-model="dialogVisible">
       <el-form :model="newProject" ref="newProjectForm" label-width="80px">
         <el-form-item label="类型">
@@ -28,7 +33,7 @@
         <el-button type="primary" @click="addProjectSubmit">确 定</el-button>
       </span>
     </el-dialog>
-  </section>
+  </div>
 </template>
 
 <script>
@@ -78,7 +83,29 @@
 </script>
 
 <style>
+  .projects_aside {
+    width: 25%;
+    float: left;
+    max-width: 325px;
+    margin-bottom: -99999px;
+    padding-bottom: 100034px;
+    min-height: 100vh;
+    padding: 0 0 110px;
+    border-right: 2px solid #f2f2f2;
+  }
+  .projects_aside_title {
+    padding: 16px 16px 0 16px;
+    font-size: 16px;
+    border-bottom: 2px solid #f2f2f2;
+  }
+  .projects_main {
+    width: 75%;
+    float: left;
+    margin-left: 25%;
+    overflow: visible;
+    min-height: 100vh;
+  }
   .projects_add {
-    float: right;
+    margin-left: 12px;
   }
 </style>
