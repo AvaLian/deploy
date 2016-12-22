@@ -9,7 +9,8 @@ const ProjectSchema = new mongoose.Schema({
   sourceRepo: { type: String, required: true },
   lastBuildDate: Date,
   buildDuration: Number,
-  buildCount: Number
+  buildCount: Number,
+  buildStatus: Number // 编译状态，0 - 编译中；1 - 编译成功；2 - 编译失败
 });
 
 export default mongoose.model('Project', ProjectSchema);
