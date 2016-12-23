@@ -5,16 +5,18 @@ const GET_PROJECT = 'GET_PROJECT';
 const PROJECT_BUILD_LOG = 'PROJECT_BUILD_LOG';
 
 const state = {
-  project: {},
-  buildLog: {}
+  project: {
+    lastCommit: {}
+  },
+  buildRecord: {}
 };
 
 const mutations = {
   [GET_PROJECT] (state, { project }) {
     state.project = project;
   },
-  [PROJECT_BUILD_LOG] (state, { buildLog }) {
-    state.buildLog = buildLog;
+  [PROJECT_BUILD_LOG] (state, { buildRecord }) {
+    state.buildRecord = buildRecord;
   }
 };
 
@@ -26,7 +28,7 @@ const actions = {
 
   async buildProject({ commit }, { id }) {
     let res = await Vue.http.get(`${INTERFACE.PROJECTS}/${id}/build`);
-    commit(PROJECT_BUILD_LOG, { buildLog: res.body.data});
+    commit(PROJECT_BUILD_LOG, { buildRecord: res.body.data});
   }
 };
 
@@ -34,8 +36,8 @@ const getters = {
   project(state) {
     return state.project;
   },
-  buildLog(state) {
-    return state.buildLog;
+  buildRecord(state) {
+    return state.buildRecord;
   }
 };
 

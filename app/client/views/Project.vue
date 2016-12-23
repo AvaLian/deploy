@@ -4,23 +4,33 @@
       <h3 class="project_title"><a :href="project.sourceRepo" target="_blank">{{project.name}}</a></h3>
       <el-button class="project_buildbtn" type="primary" @click="buildProjectById" :loading="isBuilding">编译项目</el-button>
     </header>
-    <div class="project_info">
+    <div class="project_info passed">
       <div class="project_commit">
-        <p class="project_commit_last">
-          <span class="project_commit_last_txt"></span>
-        </p>
+        <h4 class="project_commit_last">
+          <span class="project_commit_last_txt">{{project.lastCommit.message}}</span>
+        </h4>
+        <ul class="project_commit_list">
+          <li><a href="#">上次提交 {{project.lastCommit.hash}}</a></li>
+          <li><span>提交作者 {{project.lastCommit.author}}</span></li>
+          <li><span>提交时间 {{project.lastCommit.date}}</span></li>
+        </ul>
       </div>
       <div class="project_build">
-        
+        <h4 class="project_build_time">#{{project.buildCount}}编译</h4>
+        <ul class="project_build_list">
+          <li><span>编译时间 {{project.lastBuildDate | fomatDate}}</span></li>
+          <li><span>编译耗时 {{project.buildDuration || '-'}}</span></li>
+        </ul>
       </div>
     </div>
-    {{project}}
-    <br>
-    {{buildLog}}
+    <div class="project_log">
+      <build-record :buildRecord="buildRecord"></build-record>
+    </div>
   </section>
 </template>
 <script>
   import { mapGetters, mapActions } from 'vuex';
+  import BuildRecord from '../components/BuildRecord';
 
   export default {
     data() {
@@ -29,9 +39,13 @@
       }
     },
 
+    components: {
+      BuildRecord
+    },
+
     computed: mapGetters([
       'project',
-      'buildLog'
+      'buildRecord'
     ]),
 
     methods: {
@@ -83,13 +97,11 @@
   .project_buildbtn {
     float: right;
   }
-  .project_info.passed {
-    background: -webkit-linear-gradient(left,#58B7FF 0,#58B7FF 8px,#fff 8px,#fff 100%) no-repeat;
-    background: linear-gradient(to right,#58B7FF 0,#58B7FF 8px,#fff 8px,#fff 100%) no-repeat;
-  }
+  
   .project_info {
     font-size: 16px;
     border: 1px solid #EFF0EC;
+    padding: 15px 0;
     display: -webkit-box;
     display: -ms-flexbox;
     display: flex;
@@ -98,6 +110,10 @@
     -webkit-box-pack: justify;
     -ms-flex-pack: justify;
     justify-content: space-between;
+  }
+  .project_info.passed {
+    background: -webkit-linear-gradient(left,#58B7FF 0,#58B7FF 10px,#fff 10px,#fff 100%) no-repeat;
+    background: linear-gradient(to right,#58B7FF 0,#58B7FF 10px,#fff 10px,#fff 100%) no-repeat;
   }
   .project_commit {
     font-size: 16px;
@@ -111,5 +127,18 @@
   .project_build {
     font-size: 15px;
     padding-left: 28px;
+    -webkit-box-flex: 0;
+    -ms-flex: 0 1 37%;
+    flex: 0 1 37%;
+  }
+  .project_commit_list,.project_build_list {
+    padding: 0;
+    list-style: none;
+    line-height: 1.7;
+    margin: 14px 0 0;
+    font-size: 14px;
+  }
+  .project_log {
+    padding-top: 15px;
   }
 </style>

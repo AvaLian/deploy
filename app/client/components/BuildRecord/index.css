@@ -1,0 +1,22 @@
+.build_record {
+  clear: left;
+  min-height: 42px;
+  padding: 15px 0;
+  color: #f1f1f1;
+  font-family: Monaco,monospace;
+  font-size: 12px;
+  line-height: 19px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  background-color: #222;
+  counter-reset: line-numbering;
+  margin-top: 0;
+}
+.build_record p {
+  padding: 0 15px 0 15px;
+  margin: 0;
+  min-height: 16px;
+}
+.build_record p:hover {
+  background-color: #444;
+}
