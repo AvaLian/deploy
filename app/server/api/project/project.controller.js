@@ -31,19 +31,29 @@ export async function addProject (ctx) {
 };
 
 export async function getProjectById (ctx) {
-  let id = ctx.params.id;
+  const id = ctx.params.id;
   try {
     const project = await Project.findById(id);
-    const sourceRepo = project.sourceRepo;
-    const repoDir = path.join(config.root, config.repoDir);
-    if (!fse.ensureDirSync(repoDir)) {
-      fse.mkdirpSync(repoDir);
-    }
-    const projectPath = path.join(repoDir, project.name);
-    fse.removeSync(projectPath);
-    await simpleGit().clone(sourceRepo, projectPath);
+    ctx.body = { errCode: 0, errMsg: 'success', data: project };
+  } catch (err) {
+    ctx.throw(422, err.message);
+  }
+};
+
+export async function getSourceRepoInfoById (ctx) {
+  const params = ctx.params;
+  const query = ctx.query;
+  const id = params.id;
+  const name = query.name;
+  const sourceRepo = query.sourceRepo;
+  try {
+    const repoDir = path.join(config.root, config.repoDir, name);
+    fse.ensureDirSync(repoDir);
+    const sourceRepoPath = path.join(repoDir, `${name}_source`);
+    fse.removeSync(sourceRepoPath);
+    await simpleGit().clone(sourceRepo, sourceRepoPath);
     const log = await new Promise((resolve, reject) => {
-      simpleGit(projectPath).log(function (err, log) {
+      simpleGit(sourceRepoPath).log(function (err, log) {
         if (err) {
           return reject(err);
         }
@@ -60,13 +70,21 @@ export async function getProjectById (ctx) {
       lastCommit.date = latest.date;
       lastCommit.hash = latest.hash;
     }
-    let projectClone = Object.assign({}, project.toObject());
-    projectClone.lastCommit = lastCommit;
-    ctx.body = { errCode: 0, errMsg: 'success', data: projectClone };
+    const result = {
+      _id: id,
+      name: name,
+      sourceRepo: sourceRepo,
+      lastCommit: lastCommit
+    };
+    ctx.body = { errCode: 0, errMsg: 'success', data: result };
   } catch (err) {
     ctx.throw(422, err.message);
   }
-};
+}
+
+export async function getOnlineRepoInfoById (ctx) {
+  // TODO
+}
 
 export async function buildProjectById (ctx) {
   let id = ctx.params.id;

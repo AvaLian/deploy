@@ -21,8 +21,11 @@
         <el-form-item label="作者">
           <el-input v-model="newProject.author"></el-input>
         </el-form-item>
-        <el-form-item label="仓库地址">
+        <el-form-item label="源码仓库">
           <el-input v-model="newProject.sourceRepo"></el-input>
+        </el-form-item>
+        <el-form-item label="上线仓库">
+          <el-input v-model="newProject.onlineRepo"></el-input>
         </el-form-item>
         <el-form-item label="简介">
           <el-input v-model="newProject.description"></el-input>
@@ -41,7 +44,7 @@
   import ProjectList from '../components/ProjectList';
 
   export default {
-    data() {
+    data () {
       return {
         dialogVisible: false,
         newProject: {
@@ -50,6 +53,7 @@
           alias: '',
           author: '',
           sourceRepo: '',
+          onlineRepo: '',
           description: ''
         }
       }
@@ -61,13 +65,13 @@
       'projectList'
     ]),
     methods: {
-      showAddProjectDialog() {
+      showAddProjectDialog () {
         this.dialogVisible = true;
       },
-      hideAddProjectDialog() {
+      hideAddProjectDialog () {
         this.dialogVisible = false;
       },
-      async addProjectSubmit() {
+      async addProjectSubmit () {
         await this.addProject(JSON.parse(JSON.stringify(this.newProject)));
         this.dialogVisible = false;
       },
@@ -76,7 +80,7 @@
         'addProject'
       ])
     },
-    mounted() {
+    mounted () {
       this.getProjectList();
     }
   };

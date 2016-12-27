@@ -1,44 +1,51 @@
 <template>
   <section class="project">
-    <div v-loading="isLoading" element-loading-text="拼命加载数据中">
-      <header class="project_header clearfix">
-        <h3 class="project_title"><a :href="project.sourceRepo" target="_blank">{{project.name}}</a></h3>
-        <el-button class="project_buildbtn" type="primary" @click="buildProjectById" :loading="isBuilding">编译项目</el-button>
-      </header>
-      <div class="project_info passed">
-        <div class="project_commit">
-          <h4 class="project_commit_last">
-            <span class="project_commit_last_txt">{{project.lastCommit.message}}</span>
-          </h4>
-          <ul class="project_commit_list">
-            <li><a href="#">上次提交 {{project.lastCommit.hash}}</a></li>
-            <li><span>提交作者 {{project.lastCommit.author}}</span></li>
-            <li><span>提交时间 {{project.lastCommit.date}}</span></li>
-          </ul>
+    <header class="project_header clearfix">
+      <h3 class="project_title"><a :href="project.sourceRepo" target="_blank">{{project.name}}</a></h3>
+      <el-button class="project_buildbtn" type="primary" @click="buildProjectById" :loading="isBuilding">编译项目</el-button>
+    </header>
+    <el-tabs class="project_tab" :active-name="activeTabName" @tab-click="changeTab">
+      <el-tab-pane label="源码仓库" name="sourceRepo" v-loading="isSourceRepoInfoLoading" element-loading-text="拼命加载数据中">
+        <div class="project_info passed">
+          <div class="project_commit">
+            <h4 class="project_commit_last">
+              <span class="project_commit_last_txt">{{sourceRepoInfo.lastCommit.message}}</span>
+            </h4>
+            <ul class="project_commit_list">
+              <li><a href="#">上次提交 {{sourceRepoInfo.lastCommit.hash}}</a></li>
+              <li><span>提交作者 {{sourceRepoInfo.lastCommit.author}}</span></li>
+              <li><span>提交时间 {{sourceRepoInfo.lastCommit.date}}</span></li>
+            </ul>
+          </div>
+          <div class="project_build">
+            <h4 class="project_build_time">#{{project.buildCount}}编译</h4>
+            <ul class="project_build_list">
+              <li><span>编译时间 {{project.lastBuildDate | fomatDate}}</span></li>
+              <li><span>编译耗时 {{project.buildDuration || '-'}}</span></li>
+            </ul>
+          </div>
         </div>
-        <div class="project_build">
-          <h4 class="project_build_time">#{{project.buildCount}}编译</h4>
-          <ul class="project_build_list">
-            <li><span>编译时间 {{project.lastBuildDate | fomatDate}}</span></li>
-            <li><span>编译耗时 {{project.buildDuration || '-'}}</span></li>
-          </ul>
+        <div class="project_log" v-show="!isSourceRepoInfoLoading">
+          <build-record :buildRecord="buildRecord"></build-record>
         </div>
-      </div>
-    </div>
-    <div class="project_log" v-show="!isLoading">
-      <build-record :buildRecord="buildRecord"></build-record>
-    </div>
+      </el-tab-pane>
+      <el-tab-pane label="上线仓库" name="onlineRepo">
+        上线
+      </el-tab-pane>
+    </el-tabs>
   </section>
 </template>
 <script>
   import { mapGetters, mapActions } from 'vuex';
   import BuildRecord from '../components/BuildRecord';
+  import router from '../router';
 
   export default {
-    data() {
+    data () {
       return {
         isBuilding: false,
-        isLoading: true
+        isSourceRepoInfoLoading: true,
+        activeTabName: 'sourceRepo'
       }
     },
 
@@ -48,6 +55,8 @@
 
     computed: mapGetters([
       'project',
+      'sourceRepoInfo',
+      'onlineRepoInfo',
       'buildRecord'
     ]),
 
@@ -60,31 +69,64 @@
       },
 
       async fetchData () {
+        await this.fetchProjectData();
+        await this.fetchProjectRepoInfoData();
+      },
+
+      async fetchProjectData () {
         const id = this.$route.params.id;
         await this.getProject({ id });
-        this.isLoading = false;
       },
+
+      async fetchProjectRepoInfoData () {
+        const tabName = this.$route.query.tab;
+        this.activeTabName = tabName;
+        const project = this.project;
+        if (!tabName || tabName === 'sourceRepo') { // 拉取源码库相关信息
+          this.isSourceRepoInfoLoading = true;
+          await this.getSourceRepoInfo({ id: project._id, sourceRepo: project.sourceRepo, name: project.name });
+          this.isSourceRepoInfoLoading = false;
+        }
+      },
+
+      changeTab (tab) {
+        const tabName = tab.name;
+        let query = Object.assign({}, this.$route.query);
+        query.tab = tabName;
+        router.push({ query: query });
+      },
+
       ...mapActions([
         'initProject',
+        'initProjectRepoInfo',
         'getProject',
+        'getSourceRepoInfo',
+        'getOnlineRepoInfo',
         'buildProject',
         'getBuildRecord'
       ])
     },
 
-    mounted () {
+    created () {
       this.fetchData();
     },
 
     watch: {
       $route (val, oldVal) {
+        const tabName = val.query.tab;
+        const oldTabName = oldVal.query.tab;
         if (val.path !== oldVal.path) {
-          this.isLoading = true;
           this.initProject();
+          this.initProjectRepoInfo();
           this.fetchData();
+        } else {
+          if (tabName !== oldTabName) {
+            this.activeTabName = tabName;
+            this.fetchProjectRepoInfoData();
+          }
         }
       },
-      isLoading (val) {
+      isSourceRepoInfoLoading (val) {
         if (!val) {
           // 拉取上一次编译log
           const id = this.$route.params.id;
@@ -115,6 +157,9 @@
   }
   .project_buildbtn {
     float: right;
+  }
+  .project_tab {
+    width: 100%;
   }
   
   .project_info {

@@ -8,5 +8,7 @@ router.get('/', controller.getAllProjects);
 router.post('/add', controller.addProject);
 router.get('/:id', controller.getProjectById);
 router.get('/:id/build', controller.buildProjectById);
+router.get('/:id/source', controller.getSourceRepoInfoById);
+router.get('/:id/online', controller.getOnlineRepoInfoById);
 
 export default router;

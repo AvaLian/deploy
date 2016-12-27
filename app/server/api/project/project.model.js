@@ -7,6 +7,7 @@ const ProjectSchema = new mongoose.Schema({
   desciption: String,
   createTime: Date,
   sourceRepo: { type: String, required: true },
+  onlineRepo: { type: String, required: true }, // 上线资源池
   lastBuildDate: Date,
   buildDuration: Number,
   buildCount: Number,

@@ -11,7 +11,9 @@ export default {
       <div id="app">
         <app-header></app-header>
         <div class="container">
-          <router-view class="viewer"></router-view>
+          <transition name="fade">
+            <router-view class="viewer"></router-view>
+          </transition>
         </div>
       </div>
     )
