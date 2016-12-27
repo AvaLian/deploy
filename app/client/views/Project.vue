@@ -1,29 +1,31 @@
 <template>
   <section class="project">
-    <header class="project_header clearfix">
-      <h3 class="project_title"><a :href="project.sourceRepo" target="_blank">{{project.name}}</a></h3>
-      <el-button class="project_buildbtn" type="primary" @click="buildProjectById" :loading="isBuilding">编译项目</el-button>
-    </header>
-    <div class="project_info passed">
-      <div class="project_commit">
-        <h4 class="project_commit_last">
-          <span class="project_commit_last_txt">{{project.lastCommit.message}}</span>
-        </h4>
-        <ul class="project_commit_list">
-          <li><a href="#">上次提交 {{project.lastCommit.hash}}</a></li>
-          <li><span>提交作者 {{project.lastCommit.author}}</span></li>
-          <li><span>提交时间 {{project.lastCommit.date}}</span></li>
-        </ul>
-      </div>
-      <div class="project_build">
-        <h4 class="project_build_time">#{{project.buildCount}}编译</h4>
-        <ul class="project_build_list">
-          <li><span>编译时间 {{project.lastBuildDate | fomatDate}}</span></li>
-          <li><span>编译耗时 {{project.buildDuration || '-'}}</span></li>
-        </ul>
+    <div v-loading="isLoading" element-loading-text="拼命加载数据中">
+      <header class="project_header clearfix">
+        <h3 class="project_title"><a :href="project.sourceRepo" target="_blank">{{project.name}}</a></h3>
+        <el-button class="project_buildbtn" type="primary" @click="buildProjectById" :loading="isBuilding">编译项目</el-button>
+      </header>
+      <div class="project_info passed">
+        <div class="project_commit">
+          <h4 class="project_commit_last">
+            <span class="project_commit_last_txt">{{project.lastCommit.message}}</span>
+          </h4>
+          <ul class="project_commit_list">
+            <li><a href="#">上次提交 {{project.lastCommit.hash}}</a></li>
+            <li><span>提交作者 {{project.lastCommit.author}}</span></li>
+            <li><span>提交时间 {{project.lastCommit.date}}</span></li>
+          </ul>
+        </div>
+        <div class="project_build">
+          <h4 class="project_build_time">#{{project.buildCount}}编译</h4>
+          <ul class="project_build_list">
+            <li><span>编译时间 {{project.lastBuildDate | fomatDate}}</span></li>
+            <li><span>编译耗时 {{project.buildDuration || '-'}}</span></li>
+          </ul>
+        </div>
       </div>
     </div>
-    <div class="project_log">
+    <div class="project_log" v-show="!isLoading">
       <build-record :buildRecord="buildRecord"></build-record>
     </div>
   </section>
@@ -35,7 +37,8 @@
   export default {
     data() {
       return {
-        isBuilding: false
+        isBuilding: false,
+        isLoading: true
       }
     },
 
@@ -56,22 +59,38 @@
         this.isBuilding = false;
       },
 
-      fetchData () {
+      async fetchData () {
         const id = this.$route.params.id;
-        this.getProject({ id });
+        await this.getProject({ id });
+        this.isLoading = false;
       },
       ...mapActions([
+        'initProject',
         'getProject',
-        'buildProject'
+        'buildProject',
+        'getBuildRecord'
       ])
     },
 
-    created () {
+    mounted () {
       this.fetchData();
     },
 
     watch: {
-      '$route': 'fetchData'
+      $route (val, oldVal) {
+        if (val.path !== oldVal.path) {
+          this.isLoading = true;
+          this.initProject();
+          this.fetchData();
+        }
+      },
+      isLoading (val) {
+        if (!val) {
+          // 拉取上一次编译log
+          const id = this.$route.params.id;
+          this.getBuildRecord({ id });
+        }
+      }
     }
   }
 </script>

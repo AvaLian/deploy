@@ -1,21 +1,44 @@
 import './index.css';
 
+import router from '../../router';
+
 export default {
   name: 'build-record',
+  data () {
+    return {
+      currentHighlight: 0
+    }
+  },
   props: {
     buildRecord: {
       type: Object
     }
   },
-  render(h) {
-    let recordLog = this.buildRecord.record || '';
-    let htmlStr = '';
-    recordLog = recordLog.split('\n');
-    recordLog.forEach(function (item) {
-      htmlStr += `<p class="build_record_line">${item}</p>`;
+  methods: {
+    changeHighlight (i, e) {
+      const lineNum = i + 1;
+      router.replace({ query: { L: lineNum }});
+      this.setHighlight(lineNum)
+    },
+
+    setHighlight (lineNum) {
+      this.currentHighlight = lineNum;
+    }
+  },
+  mounted () {
+    const lineNum = parseInt(this.$route.query.L, 10);
+    this.setHighlight(lineNum);
+  },
+  render (h) {
+    const recordLog = (this.buildRecord.record || '').split('\n');
+    const items = recordLog.map((item, i) => {
+      return (
+        <p class={{ build_record_line: true, highlight: (this.currentHighlight === (i + 1))}}><a href="javascript:;" onClick={this.changeHighlight.bind(null, i)} class="build_record_line_num"></a>{item}</p>
+      );
     });
     return (
-      <div class="build_record" domPropsInnerHTML={htmlStr}>
+      <div class="build_record">
+        {items}
       </div>
     );
   }

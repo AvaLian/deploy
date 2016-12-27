@@ -21,14 +21,29 @@ const mutations = {
 };
 
 const actions = {
-  async getProject({ commit }, { id }) {
-    let res = await Vue.http.get(`${INTERFACE.PROJECTS}/${id}`);
+
+  initProject ({ commit }) {
+    commit(GET_PROJECT, { project: { lastCommit: {} } });
+  },
+
+  async getProject ({ commit }, { id }) {
+    const res = await Vue.http.get(`${INTERFACE.PROJECTS}/${id}`);
     commit(GET_PROJECT, { project: res.body.data});
   },
 
-  async buildProject({ commit }, { id }) {
-    let res = await Vue.http.get(`${INTERFACE.PROJECTS}/${id}/build`);
+  async buildProject ({ commit }, { id }) {
+    const res = await Vue.http.get(`${INTERFACE.PROJECTS}/${id}/build`);
     commit(PROJECT_BUILD_LOG, { buildRecord: res.body.data});
+  },
+
+  async getBuildRecord ({ commit }, { id }) {
+    const res = await Vue.http.get(`${INTERFACE.PROJECT_BUILDS}/${id}`);
+    const data = res.body.data;
+    let buildRecord = {};
+    if (data && data.length) {
+      buildRecord = data[0];
+    }
+    commit(PROJECT_BUILD_LOG, { buildRecord });
   }
 };
 

@@ -13,7 +13,7 @@ export async function getAllBuildRecords (ctx) {
 export async function getBuildRecordByProjectId (ctx) {
   try {
     const projectId = ctx.params.id;
-    const build = await Build.find({ project: projectId });
+    const build = await Build.find({ project: projectId }).sort({time: 'desc'});
     ctx.body = { errCode: 0, errMsg: 'success', data: build };
   } catch (err) {
     ctx.throw(422, err.message);
