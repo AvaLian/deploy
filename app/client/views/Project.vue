@@ -80,9 +80,9 @@
 
       async fetchProjectRepoInfoData () {
         const tabName = this.$route.query.tab;
-        this.activeTabName = tabName;
+        this.activeTabName = tabName || 'sourceRepo';
         const project = this.project;
-        if (!tabName || tabName === 'sourceRepo') { // 拉取源码库相关信息
+        if (this.activeTabName === 'sourceRepo') { // 拉取源码库相关信息
           this.isSourceRepoInfoLoading = true;
           await this.getSourceRepoInfo({ id: project._id, sourceRepo: project.sourceRepo, name: project.name });
           this.isSourceRepoInfoLoading = false;
