@@ -8,7 +8,9 @@ const PROJECT_BUILD_LOG = 'PROJECT_BUILD_LOG';
 const MODIFY_PROJECT_BUILD_STATUS = 'MODIFY_PROJECT_BUILD_STATUS';
 
 const state = {
-  project: {},
+  project: {
+    buildStatus: -1
+  },
   sourceRepoInfo: {
     lastCommit: {}
   },

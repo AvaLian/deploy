@@ -25,8 +25,8 @@
             </ul>
           </div>
           <div class="project_operate">
-            <p><el-button class="project_diffbtn" type="primary" @click="projectDiff" :loading="isBuilding">代码diff</el-button></p>
-            <p><el-button class="project_onlinebtn" type="primary" @click="projectOnline" :loading="isBuilding">上线</el-button></p>
+            <p v-if="project.buildStatus === 1"><el-button class="project_diffbtn" type="primary" @click="projectDiff" :loading="isBuilding">代码diff</el-button></p>
+            <p v-if="project.buildStatus === 1"><el-button class="project_onlinebtn" type="primary" @click="projectOnline" :loading="isBuilding">上线</el-button></p>
           </div>
         </div>
         <div class="project_log" v-show="!isSourceRepoInfoLoading">
