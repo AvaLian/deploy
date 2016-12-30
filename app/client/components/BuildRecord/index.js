@@ -33,7 +33,7 @@ export default {
     const recordLog = (this.buildRecord.record || '').split('\n');
     const items = recordLog.map((item, i) => {
       return (
-        <p class={{ build_record_line: true, highlight: (this.currentHighlight === (i + 1))}}><a href="javascript:;" onClick={this.changeHighlight.bind(null, i)} class="build_record_line_num"></a>{item}</p>
+        <p class={{ build_record_line: true, highlight: (this.currentHighlight === (i + 1)), error: this.buildRecord.errorLine === i }}><a href="javascript:;" onClick={this.changeHighlight.bind(null, i)} class="build_record_line_num"></a>{item}</p>
       );
     });
     return (

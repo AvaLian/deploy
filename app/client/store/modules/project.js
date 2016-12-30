@@ -5,6 +5,7 @@ const GET_PROJECT = 'GET_PROJECT';
 const GET_SOURCE_REPO_INFO = 'GET_SOURCE_REPO_INFO';
 const GET_ONLINE_REPO_INFO = 'GET_ONLINE_REPO_INFO';
 const PROJECT_BUILD_LOG = 'PROJECT_BUILD_LOG';
+const MODIFY_PROJECT_BUILD_STATUS = 'MODIFY_PROJECT_BUILD_STATUS';
 
 const state = {
   project: {},
@@ -21,12 +22,19 @@ const mutations = {
   [GET_PROJECT] (state, { project }) {
     state.project = project;
   },
+
+  [MODIFY_PROJECT_BUILD_STATUS] (state, { status }) {
+    state.project.buildStatus = status;
+  },
+
   [GET_SOURCE_REPO_INFO] (state, { sourceRepoInfo }) {
     state.sourceRepoInfo = sourceRepoInfo;
   },
+
   [GET_ONLINE_REPO_INFO] (state, { onlineRepoInfo }) {
     state.onlineRepoInfo = onlineRepoInfo;
   },
+
   [PROJECT_BUILD_LOG] (state, { buildRecord }) {
     state.buildRecord = buildRecord;
   }
@@ -35,12 +43,16 @@ const mutations = {
 const actions = {
 
   initProject ({ commit }) {
-    commit(GET_PROJECT, { project: {  } });
+    commit(GET_PROJECT, { project: { } });
   },
 
   initProjectRepoInfo ({ commit }) {
     commit(GET_SOURCE_REPO_INFO, { sourceRepoInfo: { lastCommit: {} } });
     commit(GET_ONLINE_REPO_INFO, { onlineRepoInfo: { lastCommit: {} } });
+  },
+
+  modifyProjectBuildStatus ({ commit }, { status }) {
+    commit(MODIFY_PROJECT_BUILD_STATUS, { status });
   },
 
   async getProject ({ commit }, { id }) {

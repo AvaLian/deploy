@@ -4,6 +4,7 @@ const Schema = mongoose.Schema;
 
 const BuildSchema = new mongoose.Schema({
   record: String,
+  errorLine: Number,
   status: Number, // 编译状态，0 - 编译中；1 - 编译成功；2 - 编译失败
   time: Date,
   operator: String,

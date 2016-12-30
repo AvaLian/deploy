@@ -6,7 +6,7 @@
     </header>
     <el-tabs class="project_tab" :active-name="activeTabName" @tab-click="changeTab">
       <el-tab-pane label="源码仓库" name="sourceRepo" v-loading="isSourceRepoInfoLoading" element-loading-text="拼命加载数据中">
-        <div class="project_info passed">
+        <div :class="{ project_info: true, passed: project.buildStatus === 1, failed: project.buildStatus === 2, building: project.buildStatus === 0 }">
           <div class="project_commit">
             <h4 class="project_commit_last">
               <span class="project_commit_last_txt">{{sourceRepoInfo.lastCommit.message}}</span>
@@ -23,6 +23,10 @@
               <li><span>编译时间 {{project.lastBuildDate | fomatDate}}</span></li>
               <li><span>编译耗时 {{project.buildDuration || '-'}}</span></li>
             </ul>
+          </div>
+          <div class="project_operate">
+            <p><el-button class="project_diffbtn" type="primary" @click="projectDiff" :loading="isBuilding">代码diff</el-button></p>
+            <p><el-button class="project_onlinebtn" type="primary" @click="projectOnline" :loading="isBuilding">上线</el-button></p>
           </div>
         </div>
         <div class="project_log" v-show="!isSourceRepoInfoLoading">
@@ -63,9 +67,19 @@
     methods: {
       async buildProjectById () {
         const id = this.$route.params.id;
+        this.modifyProjectBuildStatus({ status: 0 });
         this.isBuilding = true;
         await this.buildProject({ id });
         this.isBuilding = false;
+        this.modifyProjectBuildStatus({ status: this.buildRecord.status });
+      },
+
+      async projectDiff () {
+
+      },
+
+      async projectOnline () {
+
       },
 
       async fetchData () {
@@ -103,7 +117,8 @@
         'getSourceRepoInfo',
         'getOnlineRepoInfo',
         'buildProject',
-        'getBuildRecord'
+        'getBuildRecord',
+        'modifyProjectBuildStatus'
       ])
     },
 
@@ -179,6 +194,14 @@
     background: -webkit-linear-gradient(left,#58B7FF 0,#58B7FF 10px,#fff 10px,#fff 100%) no-repeat;
     background: linear-gradient(to right,#58B7FF 0,#58B7FF 10px,#fff 10px,#fff 100%) no-repeat;
   }
+  .project_info.failed {
+    background: -webkit-linear-gradient(left,#FF4949 0,#FF4949 10px,#fff 10px,#fff 100%) no-repeat;
+    background: linear-gradient(to right,#FF4949 0,#FF4949 10px,#fff 10px,#fff 100%) no-repeat;
+  }
+  .project_info.building {
+    background: -webkit-linear-gradient(left,#F7BA2A 0,#F7BA2A 10px,#fff 10px,#fff 100%) no-repeat;
+    background: linear-gradient(to right,#F7BA2A 0,#F7BA2A 10px,#fff 10px,#fff 100%) no-repeat;
+  }
   .project_commit {
     font-size: 16px;
     overflow: hidden;
@@ -204,5 +227,14 @@
   }
   .project_log {
     padding-top: 15px;
+  }
+  .project_operate {
+    -webkit-box-flex: 0;
+    -ms-flex: 0 1 110px;
+    flex: 0 1 110px;
+    overflow: hidden;
+  }
+  .project_diffbtn {
+    margin-bottom: 16px;
   }
 </style>

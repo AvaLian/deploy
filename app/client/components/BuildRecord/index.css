@@ -23,6 +23,9 @@
 .build_record p.highlight {
   background-color: #9d9d9d;
 }
+.build_record p.error {
+  background-color: #FF4949;
+}
 
 .build_record_line_num {
   display: inline-block;

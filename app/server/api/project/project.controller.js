@@ -112,11 +112,21 @@ export async function buildProjectById (ctx) {
     const cd = shelljs.cd(projectPath);
     // 执行ath编译
     const athBuild = shelljs.exec(`ath build --release`, { silent: true });
+    const buildLog = athBuild.stdout;
+    const buildLogArr = buildLog.split('\n');
+    let errorLine = -1;
     buildStatus = 1;
+    buildLogArr.forEach((item, i) => {
+      if (/JS_Parse_Error|Error|TypeError|Uncaught SyntaxError/.test(item)) {
+        buildStatus = 2;
+        errorLine = i;
+      }
+    });
     const buildEndTime = new Date().getTime();
     const buildRecord = {
-      record: athBuild.stdout,
+      record: buildLog,
       status: buildStatus,
+      errorLine: errorLine,
       operator: '',
       project: project._id
     };
@@ -124,7 +134,7 @@ export async function buildProjectById (ctx) {
     project.lastBuildDate = new Date;
     project.buildDuration = buildEndTime - buildStartTime;
     project.buildCount = isNaN(project.buildCount) ? 0 : project.buildCount;
-    project.buildStatus = 1;
+    project.buildStatus = buildStatus;
     project.buildCount++;
     await project.save();
     // 编译完后需要移出到根目录
