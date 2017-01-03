@@ -50,8 +50,12 @@ export async function getSourceRepoInfoById (ctx) {
     const repoDir = path.join(config.root, config.repoDir, name);
     fse.ensureDirSync(repoDir);
     const sourceRepoPath = path.join(repoDir, `${name}_source`);
-    fse.removeSync(sourceRepoPath);
-    await simpleGit().clone(sourceRepo, sourceRepoPath);
+    if (fse.existsSync(sourceRepoPath) && fse.existsSync(path.join(sourceRepoPath, '.git'))) { // 是一个git项目
+      await simpleGit(sourceRepoPath).pull(); // 更新所有分支代码
+    } else {
+      fse.removeSync(sourceRepoPath);
+      await simpleGit().clone(sourceRepo, sourceRepoPath);
+    }
     const log = await new Promise((resolve, reject) => {
       simpleGit(sourceRepoPath).log(function (err, log) {
         if (err) {
@@ -92,24 +96,36 @@ export async function buildProjectById (ctx) {
     let project = await Project.findById(id);
     let buildStatus = 0; // 开始build
     const sourceRepo = project.sourceRepo;
-    const repoDir = path.join(config.root, config.repoDir);
+    const repoDir = path.join(config.root, config.repoDir, project.name);
     fse.ensureDirSync(repoDir);
-    const projectPath = path.join(repoDir, project.name);
-    fse.removeSync(projectPath);
+    const sourceRepoPath = path.join(repoDir, `${project.name}_source`);
     const buildStartTime = new Date().getTime();
-    // 先拉取git项目
-    await new Promise((resolve, reject) => {
-      simpleGit().clone(sourceRepo, projectPath, function (err) {
-        if (err) {
-          buildStatus = 2; // 失败
-          return reject(err);
-        }
-        resolve();
+    // 保证代码最新
+    if (fse.existsSync(sourceRepoPath) && fse.existsSync(path.join(sourceRepoPath, '.git'))) { // 是一个git项目
+      await await new Promise((resolve, reject) => {
+        simpleGit(sourceRepoPath).pull(function (err) {  // 更新所有分支代码
+          if (err) {
+            buildStatus = 2; // 失败
+            return reject(err);
+          }
+          resolve();
+        });
       });
-    }).catch(function (err) {
-      console.log(err);
-    });
-    const cd = shelljs.cd(projectPath);
+    } else {
+      fse.removeSync(sourceRepoPath);
+      await new Promise((resolve, reject) => {
+        simpleGit().clone(sourceRepo, sourceRepoPath, function (err) {
+          if (err) {
+            buildStatus = 2; // 失败
+            return reject(err);
+          }
+          resolve();
+        });
+      }).catch(function (err) {
+        console.log(err);
+      });
+    }
+    const cd = shelljs.cd(sourceRepoPath);
     // 执行ath编译
     const athBuild = shelljs.exec(`ath build --release`, { silent: true });
     const buildLog = athBuild.stdout;
