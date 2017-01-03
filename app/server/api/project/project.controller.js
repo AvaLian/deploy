@@ -15,7 +15,7 @@ export async function getAllProjects (ctx) {
   } catch (err) {
     ctx.throw(422, err.message);
   }
-};
+}
 
 export async function addProject (ctx) {
   let body = ctx.request.body;
@@ -28,7 +28,7 @@ export async function addProject (ctx) {
     ctx.throw(422, err.message);
   }
   ctx.body = { errCode: 0, errMsg: 'success' };
-};
+}
 
 export async function getProjectById (ctx) {
   const id = ctx.params.id;
@@ -47,9 +47,9 @@ export async function getSourceRepoInfoById (ctx) {
   const name = query.name;
   const sourceRepo = query.sourceRepo;
   try {
-    const repoDir = path.join(config.root, config.repoDir, name);
+    const repoDir = path.join(config.root, config.repoDir, id);
     fse.ensureDirSync(repoDir);
-    const sourceRepoPath = path.join(repoDir, `${name}_source`);
+    const sourceRepoPath = path.join(repoDir, `${id}_source`);
     if (fse.existsSync(sourceRepoPath) && fse.existsSync(path.join(sourceRepoPath, '.git'))) { // 是一个git项目
       await simpleGit(sourceRepoPath).pull(); // 更新所有分支代码
     } else {
@@ -91,14 +91,14 @@ export async function getOnlineRepoInfoById (ctx) {
 }
 
 export async function buildProjectById (ctx) {
-  let id = ctx.params.id;
+  const id = ctx.params.id;
   try {
     let project = await Project.findById(id);
     let buildStatus = 0; // 开始build
     const sourceRepo = project.sourceRepo;
-    const repoDir = path.join(config.root, config.repoDir, project.name);
+    const repoDir = path.join(config.root, config.repoDir, id);
     fse.ensureDirSync(repoDir);
-    const sourceRepoPath = path.join(repoDir, `${project.name}_source`);
+    const sourceRepoPath = path.join(repoDir, `${id}_source`);
     const buildStartTime = new Date().getTime();
     // 保证代码最新
     if (fse.existsSync(sourceRepoPath) && fse.existsSync(path.join(sourceRepoPath, '.git'))) { // 是一个git项目
@@ -159,6 +159,40 @@ export async function buildProjectById (ctx) {
       errCode: 0,
       errMsg: 'success',
       data: buildRecord
+    };
+  } catch (err) {
+    ctx.throw(422, err.message);
+  }
+}
+
+export async function getOnlineDiff (ctx) {
+  const id = ctx.params.id;
+  const query = ctx.query;
+  const onlineRepo = query.onlineRepo;
+  try {
+    const repoDir = path.join(config.root, config.repoDir, id);
+    const sourceRepo = path.join(repoDir, `${id}_source`);
+    const appConf = require(path.join(sourceRepo, 'app-conf.js'));
+    const lastBuildResultDir = path.join(sourceRepo, '.temp', appConf.app);
+    const onlineRepoDir = path.join(repoDir, `${id}_online`);
+    // 先拉取一下onlineRepo的最新代码
+    if (fse.existsSync(onlineRepoDir) && fse.existsSync(path.join(onlineRepoDir, '.git'))) { // 是一个git项目
+      await simpleGit(onlineRepoDir).pull(); // 更新所有分支代码
+    } else {
+      fse.removeSync(onlineRepoDir);
+      await simpleGit().clone(onlineRepo, onlineRepoDir);
+    }
+    const dirCompare = require('dir-compare');
+    const options = {
+      compareContent: true,
+      excludeFilter: '.git,node_modules,.DS_Store'
+    };
+    const compareResult = dirCompare.compareSync(lastBuildResultDir, onlineRepoDir, options);
+    
+    ctx.body = {
+      errCode: 0,
+      errMsg: 'success',
+      data: compareResult.diffSet
     };
   } catch (err) {
     ctx.throw(422, err.message);
