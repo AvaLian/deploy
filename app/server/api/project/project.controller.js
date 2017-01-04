@@ -188,11 +188,59 @@ export async function getOnlineDiff (ctx) {
       excludeFilter: '.git,node_modules,.DS_Store'
     };
     const compareResult = dirCompare.compareSync(lastBuildResultDir, onlineRepoDir, options);
-    
+    const diffSet = compareResult.diffSet;
+    const lastBuildDirInfo = [];
+    const onlineRepoDirInfo = [];
+    function generateLastBuildDirInfo (infoArr, entry, different) {
+      if (entry.level === 0) {
+        infoArr.push({
+          name: entry[`name${different}`],
+          type: entry[`type${different}`],
+          relative: entry.relativePath,
+          children: []
+        });
+      } else {
+        (function iterateThrough (arr, obj) {
+          arr.forEach((item) => {
+            if (item.type === 'directory') {
+              if (`${item.relative}/${item.name}` === obj.relativePath) {
+                item.children.push({
+                  name: obj[`name${different}`],
+                  type: obj[`type${different}`],
+                  relative: obj.relativePath,
+                  children: []
+                });
+              } else {
+                iterateThrough(item.children, obj);
+              }
+            }
+          });
+        })(infoArr, entry);
+      }
+    }
+    diffSet.forEach((entry) => {
+      switch (entry.state) {
+        case 'left':  // 只有左边有
+          generateLastBuildDirInfo(lastBuildDirInfo, entry, '1');
+          break;
+        case 'right':
+          generateLastBuildDirInfo(onlineRepoDirInfo, entry, '2');
+          break;
+        case 'equal':
+        case 'distinct':
+          generateLastBuildDirInfo(lastBuildDirInfo, entry, '1');
+          generateLastBuildDirInfo(onlineRepoDirInfo, entry, '2');
+          break;
+      }
+    });
     ctx.body = {
       errCode: 0,
       errMsg: 'success',
-      data: compareResult.diffSet
+      data: {
+        left: lastBuildDirInfo,
+        right: onlineRepoDirInfo,
+        diffSet: diffSet
+      }
     };
   } catch (err) {
     ctx.throw(422, err.message);

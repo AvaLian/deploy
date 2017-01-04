@@ -25,7 +25,7 @@
             </ul>
           </div>
           <div class="project_operate">
-            <p v-if="project.buildStatus === 1"><el-button class="project_diffbtn" type="primary" @click="projectDiff" :loading="isBuilding">代码diff</el-button></p>
+            <p v-if="project.buildStatus === 1"><el-button class="project_diffbtn" type="primary" @click="projectDiff" :loading="isBuilding">文件diff</el-button></p>
             <p v-if="project.buildStatus === 1"><el-button class="project_onlinebtn" type="primary" @click="projectOnline" :loading="isBuilding">上线</el-button></p>
           </div>
         </div>
@@ -37,11 +37,18 @@
         上线
       </el-tab-pane>
     </el-tabs>
+    <el-dialog title="文件diff" v-model="showDirDiffDialog">
+      <div v-loading="isDirDiffLoading">
+        <tree-view :treeData="dirDiff.left" />
+        <tree-view :treeData="dirDiff.right" />
+      </div>
+    </el-dialog>
   </section>
 </template>
 <script>
   import { mapGetters, mapActions } from 'vuex';
   import BuildRecord from '../components/BuildRecord';
+  import TreeView from '../components/TreeView';
   import router from '../router';
 
   export default {
@@ -49,19 +56,23 @@
       return {
         isBuilding: false,
         isSourceRepoInfoLoading: true,
-        activeTabName: 'sourceRepo'
+        activeTabName: 'sourceRepo',
+        isDirDiffLoading: false,
+        showDirDiffDialog: false
       }
     },
 
     components: {
-      BuildRecord
+      BuildRecord,
+      TreeView
     },
 
     computed: mapGetters([
       'project',
       'sourceRepoInfo',
       'onlineRepoInfo',
-      'buildRecord'
+      'buildRecord',
+      'dirDiff'
     ]),
 
     methods: {
@@ -75,7 +86,13 @@
       },
 
       async projectDiff () {
-
+        this.showDirDiffDialog = true;
+        this.isDirDiffLoading = true;
+        await this.getDirDiff({
+          id: this.project._id,
+          onlineRepo: this.project.onlineRepo
+        });
+        this.isDirDiffLoading = false;
       },
 
       async projectOnline () {
@@ -118,7 +135,8 @@
         'getOnlineRepoInfo',
         'buildProject',
         'getBuildRecord',
-        'modifyProjectBuildStatus'
+        'modifyProjectBuildStatus',
+        'getDirDiff'
       ])
     },
 
