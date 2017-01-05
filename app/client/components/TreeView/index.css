@@ -1,0 +1,10 @@
+.tree {
+  padding: 4px 8px;
+  margin-top: 10px;
+}
+.tree_item {
+  cursor: pointer;
+}
+.tree_sub {
+  padding-left: 14px;
+}

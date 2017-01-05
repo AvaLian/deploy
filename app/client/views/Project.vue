@@ -25,7 +25,7 @@
             </ul>
           </div>
           <div class="project_operate">
-            <p v-if="project.buildStatus === 1"><el-button class="project_diffbtn" type="primary" @click="projectDiff" :loading="isBuilding">文件diff</el-button></p>
+            <p v-if="project.buildStatus === 1"><el-button class="project_diffbtn" type="primary" @click="projectDiff" :loading="isBuilding">代码diff</el-button></p>
             <p v-if="project.buildStatus === 1"><el-button class="project_onlinebtn" type="primary" @click="projectOnline" :loading="isBuilding">上线</el-button></p>
           </div>
         </div>
@@ -37,10 +37,16 @@
         上线
       </el-tab-pane>
     </el-tabs>
-    <el-dialog title="文件diff" v-model="showDirDiffDialog">
-      <div v-loading="isDirDiffLoading">
-        <tree-view :treeData="dirDiff.left" />
-        <tree-view :treeData="dirDiff.right" />
+    <el-dialog class="diff_dialog" title="代码diff" v-model="showDirDiffDialog" size="large">
+      <div v-loading="isDirDiffLoading" class="diff_container">
+        <div class="diff_left">
+          <h3 class="diff_left_title">编译结果</h3>
+          <tree-view class="diff_left_tree" :treeData="dirDiff.left" />
+        </div>
+        <div class="diff_right">
+          <h3 class="diff_right_title">基线版本</h3>
+          <tree-view :treeData="dirDiff.right" />
+        </div>
       </div>
     </el-dialog>
   </section>
@@ -254,5 +260,14 @@
   }
   .project_diffbtn {
     margin-bottom: 16px;
+  }
+  .diff_container {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: stretch;
+  }
+  .diff_left,.diff_right {
+    flex: 1;
+    width: 100%;
   }
 </style>

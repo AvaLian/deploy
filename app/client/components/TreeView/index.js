@@ -5,9 +5,10 @@ import Vue from 'vue';
 const template = `
   <li class="tree_item">
     <div :class="{ tree_item_directory: isDirectory, tree_item_file: isFile }" @click="toggle">
-      {{ treeItem.name }}
+      <a href="#" v-if="isFile">{{ treeItem.name }}</a>
+      <span v-if="isDirectory">{{ treeItem.name }}</span>
     </div>
-    <ul v-if="isDirectory" v-show="isOpen">
+    <ul class="tree_sub" v-if="isDirectory" v-show="isOpen">
       <tree-item v-for="treeItem in treeItem.children" :treeItem="treeItem"></tree-item>
     </ul>
   </li>
