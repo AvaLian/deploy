@@ -18,12 +18,8 @@ const mutations = {
 };
 
 const actions = {
-  async getDirDiff ({ commit }, { id, onlineRepo }) {
-    const res = await Vue.http.get(`${INTERFACE.PROJECTS}/${id}/diff`, {
-      params: {
-        onlineRepo
-      }
-    });
+  async getDirDiff ({ commit }, { id }) {
+    const res = await Vue.http.get(`${INTERFACE.PROJECTS}/${id}/diff`);
     commit(GET_DIR_DIFF, { dirDiff: res.body.data});
   }
 };

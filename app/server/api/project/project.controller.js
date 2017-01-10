@@ -2,11 +2,56 @@ import fse from 'fs-extra';
 import path from 'path';
 import shelljs from 'shelljs';
 import simpleGit from 'simple-git';
+import jsBeautify from 'js-beautify';
 
 import Project from './project.model.js';
 import { addBuildRecord } from '../build/build.controller.js';
 import config from '../../config';
 
+async function getNewestRepo (repo, repoPath) {
+  let res = 0; // 0 表示拉取成功
+  if (fse.existsSync(repoPath) && fse.existsSync(path.join(repoPath, '.git'))) { // 是一个git项目
+    await await new Promise((resolve, reject) => {
+      simpleGit(repoPath).fetch({ '--all': true }, err => {  // 更新所有分支代码
+        if (err) {
+          res = 1; // 失败
+          return reject(err);
+        }
+        resolve();
+      }).reset(['--hard'], err => {
+        if (err) {
+          res = 1; // 失败
+          return reject(err);
+        }
+        resolve();
+      });
+    });
+  } else {
+    fse.removeSync(repoPath);
+    await new Promise((resolve, reject) => {
+      simpleGit().clone(repo, repoPath, err => {
+        if (err) {
+          res = 1; // 失败
+          return reject(err);
+        }
+        resolve();
+      });
+    }).catch(function (err) {
+      console.log(err);
+    });
+  }
+  return res;
+}
+
+function getBeautifyMethod (type) {
+  if (/css/.test(type)) {
+    return jsBeautify.css;
+  } else if (/js/.test(type)) {
+    return jsBeautify;
+  } else if (/html/.test(type)) {
+    return jsBeautify.html;
+  }
+}
 
 export async function getAllProjects (ctx) {
   try {
@@ -50,11 +95,13 @@ export async function getSourceRepoInfoById (ctx) {
     const repoDir = path.join(config.root, config.repoDir, id);
     fse.ensureDirSync(repoDir);
     const sourceRepoPath = path.join(repoDir, `${id}_source`);
-    if (fse.existsSync(sourceRepoPath) && fse.existsSync(path.join(sourceRepoPath, '.git'))) { // 是一个git项目
-      await simpleGit(sourceRepoPath).pull(); // 更新所有分支代码
-    } else {
-      fse.removeSync(sourceRepoPath);
-      await simpleGit().clone(sourceRepo, sourceRepoPath);
+    let getNewResult = await getNewestRepo(sourceRepo, sourceRepoPath);
+    if (getNewResult === 1) {
+      ctx.body = {
+        errCode: 100,
+        errMsg: '代码拉取错误，请重试！'
+      };
+      return;
     }
     const log = await new Promise((resolve, reject) => {
       simpleGit(sourceRepoPath).log(function (err, log) {
@@ -101,29 +148,9 @@ export async function buildProjectById (ctx) {
     const sourceRepoPath = path.join(repoDir, `${id}_source`);
     const buildStartTime = new Date().getTime();
     // 保证代码最新
-    if (fse.existsSync(sourceRepoPath) && fse.existsSync(path.join(sourceRepoPath, '.git'))) { // 是一个git项目
-      await await new Promise((resolve, reject) => {
-        simpleGit(sourceRepoPath).pull(function (err) {  // 更新所有分支代码
-          if (err) {
-            buildStatus = 2; // 失败
-            return reject(err);
-          }
-          resolve();
-        });
-      });
-    } else {
-      fse.removeSync(sourceRepoPath);
-      await new Promise((resolve, reject) => {
-        simpleGit().clone(sourceRepo, sourceRepoPath, function (err) {
-          if (err) {
-            buildStatus = 2; // 失败
-            return reject(err);
-          }
-          resolve();
-        });
-      }).catch(function (err) {
-        console.log(err);
-      });
+    let getNewResult = await getNewestRepo(sourceRepo, sourceRepoPath);
+    if (getNewResult === 1) {
+      buildStatus = 2;
     }
     const cd = shelljs.cd(sourceRepoPath);
     // 执行ath编译
@@ -168,80 +195,118 @@ export async function buildProjectById (ctx) {
 export async function getOnlineDiff (ctx) {
   const id = ctx.params.id;
   const query = ctx.query;
-  const onlineRepo = query.onlineRepo;
   try {
+    let project = await Project.findById(id);
+    const onlineRepo = project.onlineRepo;
     const repoDir = path.join(config.root, config.repoDir, id);
     const sourceRepo = path.join(repoDir, `${id}_source`);
     const appConf = require(path.join(sourceRepo, 'app-conf.js'));
     const lastBuildResultDir = path.join(sourceRepo, '.temp', appConf.app);
     const onlineRepoDir = path.join(repoDir, `${id}_online`);
     // 先拉取一下onlineRepo的最新代码
-    if (fse.existsSync(onlineRepoDir) && fse.existsSync(path.join(onlineRepoDir, '.git'))) { // 是一个git项目
-      await simpleGit(onlineRepoDir).pull(); // 更新所有分支代码
+    let getNewResult = await getNewestRepo(onlineRepo, onlineRepoDir);
+    if (getNewResult === 1) {
+      ctx.body = {
+        errCode: 100,
+        errMsg: '代码拉取错误，请重试！'
+      };
+      return;
+    }
+    if ('left' in query || 'right' in query) {
+      const left = query.left || ''; // 左側文件
+      const right = query.right || ''; // 右側文件
+      const leftFilePath = path.join(lastBuildResultDir, left);
+      const rightFilePath = path.join(onlineRepoDir, right);
+      let leftFileContent = '';
+      let rightFileContent = '';
+      const beautifyOptions = { indent_size: 2 };
+      if (left && fse.existsSync(leftFilePath) && fse.statSync(leftFilePath).isFile()) { // 編譯后的文件中有此文件
+        leftFileContent = getBeautifyMethod(path.extname(leftFilePath))(String(fse.readFileSync(leftFilePath)), beautifyOptions);
+      }
+      if (right && fse.existsSync(rightFilePath) && fse.statSync(rightFilePath).isFile()) { // 基線版本中沒有此文件
+        rightFileContent = getBeautifyMethod(path.extname(rightFilePath))(String(fse.readFileSync(rightFilePath)), beautifyOptions);
+      }
+      
+      if (leftFileContent.length === 0 && rightFileContent === 0) {
+        ctx.body = {
+          errCode: 101,
+          errMsg: '傳入的文件地址有誤，請檢查！'
+        };
+        return;
+      }
+      const jsdiff = require('diff');
+      const diffResult = jsdiff.diffLines(leftFileContent, rightFileContent);
+      ctx.body = {
+        errCode: 0,
+        errMsg: 'success',
+        data: {
+          left: leftFileContent,
+          right: rightFileContent,
+          diffSet: diffResult
+        }
+      };
     } else {
-      fse.removeSync(onlineRepoDir);
-      await simpleGit().clone(onlineRepo, onlineRepoDir);
-    }
-    const dirCompare = require('dir-compare');
-    const options = {
-      compareContent: true,
-      excludeFilter: '.git,node_modules,.DS_Store'
-    };
-    const compareResult = dirCompare.compareSync(lastBuildResultDir, onlineRepoDir, options);
-    const diffSet = compareResult.diffSet;
-    const lastBuildDirInfo = [];
-    const onlineRepoDirInfo = [];
-    function generateLastBuildDirInfo (infoArr, entry, different) {
-      if (entry.level === 0) {
-        infoArr.push({
-          name: entry[`name${different}`],
-          type: entry[`type${different}`],
-          relative: entry.relativePath,
-          children: []
-        });
-      } else {
-        (function iterateThrough (arr, obj) {
-          arr.forEach((item) => {
-            if (item.type === 'directory') {
-              if (`${item.relative}/${item.name}` === obj.relativePath) {
-                item.children.push({
-                  name: obj[`name${different}`],
-                  type: obj[`type${different}`],
-                  relative: obj.relativePath,
-                  children: []
-                });
-              } else {
-                iterateThrough(item.children, obj);
-              }
-            }
+      const dirCompare = require('dir-compare');
+      const options = {
+        compareContent: true,
+        excludeFilter: '.git,node_modules,.DS_Store'
+      };
+      const compareResult = dirCompare.compareSync(lastBuildResultDir, onlineRepoDir, options);
+      const diffSet = compareResult.diffSet;
+      const lastBuildDirInfo = [];
+      const onlineRepoDirInfo = [];
+      function generateLastBuildDirInfo (infoArr, entry, different) {
+        if (entry.level === 0) {
+          infoArr.push({
+            name: entry[`name${different}`],
+            type: entry[`type${different}`],
+            relative: entry.relativePath,
+            children: []
           });
-        })(infoArr, entry);
+        } else {
+          (function iterateThrough (arr, obj) {
+            arr.forEach((item) => {
+              if (item.type === 'directory') {
+                if (`${item.relative}/${item.name}` === obj.relativePath) {
+                  item.children.push({
+                    name: obj[`name${different}`],
+                    type: obj[`type${different}`],
+                    relative: obj.relativePath,
+                    children: []
+                  });
+                } else {
+                  iterateThrough(item.children, obj);
+                }
+              }
+            });
+          })(infoArr, entry);
+        }
       }
+      diffSet.forEach((entry) => {
+        switch (entry.state) {
+          case 'left':  // 只有左边有
+            generateLastBuildDirInfo(lastBuildDirInfo, entry, '1');
+            break;
+          case 'right':
+            generateLastBuildDirInfo(onlineRepoDirInfo, entry, '2');
+            break;
+          case 'equal':
+          case 'distinct':
+            generateLastBuildDirInfo(lastBuildDirInfo, entry, '1');
+            generateLastBuildDirInfo(onlineRepoDirInfo, entry, '2');
+            break;
+        }
+      });
+      ctx.body = {
+        errCode: 0,
+        errMsg: 'success',
+        data: {
+          left: lastBuildDirInfo,
+          right: onlineRepoDirInfo,
+          diffSet: diffSet
+        }
+      };
     }
-    diffSet.forEach((entry) => {
-      switch (entry.state) {
-        case 'left':  // 只有左边有
-          generateLastBuildDirInfo(lastBuildDirInfo, entry, '1');
-          break;
-        case 'right':
-          generateLastBuildDirInfo(onlineRepoDirInfo, entry, '2');
-          break;
-        case 'equal':
-        case 'distinct':
-          generateLastBuildDirInfo(lastBuildDirInfo, entry, '1');
-          generateLastBuildDirInfo(onlineRepoDirInfo, entry, '2');
-          break;
-      }
-    });
-    ctx.body = {
-      errCode: 0,
-      errMsg: 'success',
-      data: {
-        left: lastBuildDirInfo,
-        right: onlineRepoDirInfo,
-        diffSet: diffSet
-      }
-    };
   } catch (err) {
     ctx.throw(422, err.message);
   }

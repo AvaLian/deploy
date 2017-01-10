@@ -95,8 +95,7 @@
         this.showDirDiffDialog = true;
         this.isDirDiffLoading = true;
         await this.getDirDiff({
-          id: this.project._id,
-          onlineRepo: this.project.onlineRepo
+          id: this.project._id
         });
         this.isDirDiffLoading = false;
       },
