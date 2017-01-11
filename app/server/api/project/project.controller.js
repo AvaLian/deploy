@@ -12,14 +12,14 @@ import config from '../../config';
 async function getNewestRepo (repo, repoPath) {
   let res = 0; // 0 表示拉取成功
   if (fse.existsSync(repoPath) && fse.existsSync(path.join(repoPath, '.git'))) { // 是一个git项目
-    await await new Promise((resolve, reject) => {
-      simpleGit(repoPath).fetch({ '--all': true }, err => {  // 更新所有分支代码
+    await new Promise((resolve, reject) => {
+      simpleGit(repoPath).fetch({'--all': true}, err => {  // 更新所有分支代码
         if (err) {
           res = 1; // 失败
           return reject(err);
         }
         resolve();
-      }).reset(['--hard'], err => {
+      }).reset(['--hard', 'origin/master'], err => {
         if (err) {
           res = 1; // 失败
           return reject(err);
@@ -301,9 +301,12 @@ export async function getOnlineDiff (ctx) {
             generateLastBuildDirInfo(onlineRepoDirInfo, entry, '2', 'right');
             break;
           case 'equal':
+            generateLastBuildDirInfo(lastBuildDirInfo, entry, '1', 'equal');
+            generateLastBuildDirInfo(onlineRepoDirInfo, entry, '2', 'equal');
+            break;
           case 'distinct':
-            generateLastBuildDirInfo(lastBuildDirInfo, entry, '1', 'both');
-            generateLastBuildDirInfo(onlineRepoDirInfo, entry, '2', 'both');
+            generateLastBuildDirInfo(lastBuildDirInfo, entry, '1', 'distinct');
+            generateLastBuildDirInfo(onlineRepoDirInfo, entry, '2', 'distinct');
             break;
         }
       });

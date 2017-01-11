@@ -8,3 +8,6 @@
 .tree_sub {
   padding-left: 14px;
 }
+.tree_item .highlight {
+  background-color: #ff4949;
+}

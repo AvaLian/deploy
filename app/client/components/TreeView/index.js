@@ -4,7 +4,7 @@ import Vue from 'vue';
 
 const template = `
   <li class="tree_item">
-    <div :class="{ tree_item_directory: isDirectory, tree_item_file: isFile }" @click="toggle">
+    <div :class="{ tree_item_directory: isDirectory, tree_item_file: isFile, highlight: treeItem.pos !== 'equal' }" @click="toggle">
       <a href="#" v-if="isFile" @click="onFileClick($event, treeItem)">{{ treeItem.name }}</a>
       <span v-if="isDirectory">{{ treeItem.name }}</span>
     </div>

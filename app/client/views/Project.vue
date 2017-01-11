@@ -37,7 +37,7 @@
         上线
       </el-tab-pane>
     </el-tabs>
-    <el-dialog class="diff_dialog" title="代码diff" v-model="showDirDiffDialog" size="large">
+    <el-dialog class="diff_dialog" title="代码diff" v-model="showDirDiffDialog" size="full">
       <div v-loading="isDirDiffLoading" class="diff_container">
         <div class="diff_left">
           <h3 class="diff_left_title">编译结果</h3>
@@ -186,7 +186,7 @@
         let params = {
           id: this.project._id
         };
-        if (item.pos === 'both') {
+        if (item.pos === 'equal' || item.pos === 'distinct') {
           params.left = params.right = `${item.relative}/${item.name}`;
         } else {
           params[item.pos] = `${item.relative}/${item.name}`;
@@ -311,6 +311,9 @@
   .project_diffbtn {
     margin-bottom: 16px;
   }
+  .diff_dialog {
+    margin-top: 50px;
+  }
   .diff_container {
     display: flex;
     box-orient: horizontal;
@@ -319,6 +322,6 @@
   }
   .diff_left,.diff_right {
     flex: 1;
-    width: 100%;
+    width: 50%;
   }
 </style>
