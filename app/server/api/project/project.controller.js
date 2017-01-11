@@ -3,6 +3,7 @@ import path from 'path';
 import shelljs from 'shelljs';
 import simpleGit from 'simple-git';
 import jsBeautify from 'js-beautify';
+import hljs from 'highlight.js';
 
 import Project from './project.model.js';
 import { addBuildRecord } from '../build/build.controller.js';
@@ -50,6 +51,10 @@ function getBeautifyMethod (type) {
     return jsBeautify;
   } else if (/html/.test(type)) {
     return jsBeautify.html;
+  } else {
+    return function (str) {
+      return str;
+    }
   }
 }
 
@@ -221,10 +226,14 @@ export async function getOnlineDiff (ctx) {
       let rightFileContent = '';
       const beautifyOptions = { indent_size: 2 };
       if (left && fse.existsSync(leftFilePath) && fse.statSync(leftFilePath).isFile()) { // 編譯后的文件中有此文件
-        leftFileContent = getBeautifyMethod(path.extname(leftFilePath))(String(fse.readFileSync(leftFilePath)), beautifyOptions);
+        let fileType = path.extname(leftFilePath).replace(/^\./, '');
+        leftFileContent = getBeautifyMethod(fileType)(String(fse.readFileSync(leftFilePath)), beautifyOptions);
+        leftFileContent = hljs.highlight(fileType, leftFileContent, true).value;
       }
       if (right && fse.existsSync(rightFilePath) && fse.statSync(rightFilePath).isFile()) { // 基線版本中沒有此文件
-        rightFileContent = getBeautifyMethod(path.extname(rightFilePath))(String(fse.readFileSync(rightFilePath)), beautifyOptions);
+        let fileType = path.extname(rightFilePath).replace(/^\./, '');
+        rightFileContent = getBeautifyMethod(fileType)(String(fse.readFileSync(rightFilePath)), beautifyOptions);
+        rightFileContent = hljs.highlight(fileType, rightFileContent, true).value;
       }
       
       if (leftFileContent.length === 0 && rightFileContent === 0) {
@@ -240,8 +249,6 @@ export async function getOnlineDiff (ctx) {
         errCode: 0,
         errMsg: 'success',
         data: {
-          left: leftFileContent,
-          right: rightFileContent,
           diffSet: diffResult
         }
       };
@@ -255,12 +262,14 @@ export async function getOnlineDiff (ctx) {
       const diffSet = compareResult.diffSet;
       const lastBuildDirInfo = [];
       const onlineRepoDirInfo = [];
-      function generateLastBuildDirInfo (infoArr, entry, different) {
+      function generateLastBuildDirInfo (infoArr, entry, different, pos) {
+        entry.fullname = entry.relativePath + '/' + entry[`name${different}`];
         if (entry.level === 0) {
           infoArr.push({
             name: entry[`name${different}`],
             type: entry[`type${different}`],
             relative: entry.relativePath,
+            pos,
             children: []
           });
         } else {
@@ -272,6 +281,7 @@ export async function getOnlineDiff (ctx) {
                     name: obj[`name${different}`],
                     type: obj[`type${different}`],
                     relative: obj.relativePath,
+                    pos,
                     children: []
                   });
                 } else {
@@ -282,18 +292,18 @@ export async function getOnlineDiff (ctx) {
           })(infoArr, entry);
         }
       }
-      diffSet.forEach((entry) => {
+      diffSet.forEach(entry => {
         switch (entry.state) {
           case 'left':  // 只有左边有
-            generateLastBuildDirInfo(lastBuildDirInfo, entry, '1');
+            generateLastBuildDirInfo(lastBuildDirInfo, entry, '1', 'left');
             break;
           case 'right':
-            generateLastBuildDirInfo(onlineRepoDirInfo, entry, '2');
+            generateLastBuildDirInfo(onlineRepoDirInfo, entry, '2', 'right');
             break;
           case 'equal':
           case 'distinct':
-            generateLastBuildDirInfo(lastBuildDirInfo, entry, '1');
-            generateLastBuildDirInfo(onlineRepoDirInfo, entry, '2');
+            generateLastBuildDirInfo(lastBuildDirInfo, entry, '1', 'both');
+            generateLastBuildDirInfo(onlineRepoDirInfo, entry, '2', 'both');
             break;
         }
       });

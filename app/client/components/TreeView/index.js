@@ -5,11 +5,11 @@ import Vue from 'vue';
 const template = `
   <li class="tree_item">
     <div :class="{ tree_item_directory: isDirectory, tree_item_file: isFile }" @click="toggle">
-      <a href="#" v-if="isFile">{{ treeItem.name }}</a>
+      <a href="#" v-if="isFile" @click="onFileClick($event, treeItem)">{{ treeItem.name }}</a>
       <span v-if="isDirectory">{{ treeItem.name }}</span>
     </div>
     <ul class="tree_sub" v-if="isDirectory" v-show="isOpen">
-      <tree-item v-for="treeItem in treeItem.children" :treeItem="treeItem"></tree-item>
+      <tree-item v-for="treeItem in treeItem.children" :treeItem="treeItem" v-on:fileClick="onSubFileClick(treeItem)"></tree-item>
     </ul>
   </li>
 `;
@@ -38,6 +38,13 @@ Vue.component('tree-item', {
       if (this.isDirectory) {
         this.isOpen = !this.isOpen;
       }
+    },
+    onFileClick ($event, treeItem) {
+      $event.preventDefault();
+      this.$emit('fileClick', treeItem);
+    },
+    onSubFileClick (treeItem) {
+      this.$emit('fileClick', treeItem);
     }
   }
 });
@@ -47,11 +54,16 @@ export default {
   props: {
     treeData: Array
   },
+  methods: {
+    onFileClick (treeItem) {
+      this.$emit('fileClick', treeItem);
+    }
+  },
   render (h) {
     const treeData = this.treeData || [];
-    const items = treeData.map(item => {
+    const items = treeData.map(dataItem => {
       return (
-        <tree-item treeItem={item}></tree-item>
+        <tree-item treeItem={dataItem} onFileClick={this.onFileClick}></tree-item>
       );
     });
 

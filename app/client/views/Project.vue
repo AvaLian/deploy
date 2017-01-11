@@ -41,11 +41,13 @@
       <div v-loading="isDirDiffLoading" class="diff_container">
         <div class="diff_left">
           <h3 class="diff_left_title">编译结果</h3>
-          <tree-view class="diff_left_tree" :treeData="dirDiff.left" />
+          <tree-view class="diff_left_tree" @fileClick="onFileClick" :treeDiff="dirDiff.diffSet" :treeData="dirDiff.left" />
+          <code-show :codeData="leftFileCode" v-show="showFileDiff"></code-show>
         </div>
         <div class="diff_right">
           <h3 class="diff_right_title">基线版本</h3>
-          <tree-view :treeData="dirDiff.right" />
+          <tree-view class="diff_right_tree" @fileClick="onFileClick" :treeDiff="dirDiff.diffSet" :treeData="dirDiff.right" />
+          <code-show :codeData="rightFileCode" v-show="showFileDiff"></code-show>
         </div>
       </div>
     </el-dialog>
@@ -53,8 +55,11 @@
 </template>
 <script>
   import { mapGetters, mapActions } from 'vuex';
+  import 'highlight.js/styles/xcode.css';
+
   import BuildRecord from '../components/BuildRecord';
   import TreeView from '../components/TreeView';
+  import CodeShow from '../components/CodeShow';
   import router from '../router';
 
   export default {
@@ -64,24 +69,69 @@
         isSourceRepoInfoLoading: true,
         activeTabName: 'sourceRepo',
         isDirDiffLoading: false,
-        showDirDiffDialog: false
+        showDirDiffDialog: false,
+        showFileDiff: false
       }
     },
 
     components: {
       BuildRecord,
-      TreeView
+      TreeView,
+      CodeShow
     },
 
-    computed: mapGetters([
-      'project',
-      'sourceRepoInfo',
-      'onlineRepoInfo',
-      'buildRecord',
-      'dirDiff'
-    ]),
+    computed: {
+      ...mapGetters([
+        'project',
+        'sourceRepoInfo',
+        'onlineRepoInfo',
+        'buildRecord',
+        'dirDiff',
+        'fileDiff'
+      ]),
+
+      leftFileCode () {
+        const diffSet = this.fileDiff.diffSet;
+        let res = [];
+        diffSet.forEach(item => {
+          let value = item.value.split('\n');
+          if (item.removed && !item.added) {
+            res = res.concat(value.map(s => ({code: s, different: true})));
+          } else if (!item.removed && !item.added) {
+            res = res.concat(value.map(s => ({code: s, different: false})));
+          }
+        });
+        return res;
+      },
+
+      rightFileCode () {
+        const diffSet = this.fileDiff.diffSet;
+        let res = [];
+        diffSet.forEach(item => {
+          let value = item.value.split('\n');
+          if (!item.removed && item.added) {
+            res = res.concat(value.map(s => ({code: s, different: true})));
+          } else if (!item.removed && !item.added) {
+            res = res.concat(value.map(s => ({code: s, different: false})));
+          }
+        });
+        return res;
+      }
+    },
 
     methods: {
+      ...mapActions([
+        'initProject',
+        'initProjectRepoInfo',
+        'getProject',
+        'getSourceRepoInfo',
+        'getOnlineRepoInfo',
+        'buildProject',
+        'getBuildRecord',
+        'modifyProjectBuildStatus',
+        'getDiff'
+      ]),
+
       async buildProjectById () {
         const id = this.$route.params.id;
         this.modifyProjectBuildStatus({ status: 0 });
@@ -94,7 +144,7 @@
       async projectDiff () {
         this.showDirDiffDialog = true;
         this.isDirDiffLoading = true;
-        await this.getDirDiff({
+        await this.getDiff({
           id: this.project._id
         });
         this.isDirDiffLoading = false;
@@ -132,17 +182,18 @@
         router.push({ query: query });
       },
 
-      ...mapActions([
-        'initProject',
-        'initProjectRepoInfo',
-        'getProject',
-        'getSourceRepoInfo',
-        'getOnlineRepoInfo',
-        'buildProject',
-        'getBuildRecord',
-        'modifyProjectBuildStatus',
-        'getDirDiff'
-      ])
+      async onFileClick (item) {
+        let params = {
+          id: this.project._id
+        };
+        if (item.pos === 'both') {
+          params.left = params.right = `${item.relative}/${item.name}`;
+        } else {
+          params[item.pos] = `${item.relative}/${item.name}`;
+        }
+        await this.getDiff(params);
+        this.showFileDiff = true;
+      }
     },
 
     created () {
@@ -262,8 +313,9 @@
   }
   .diff_container {
     display: flex;
-    flex-flow: row wrap;
-    align-items: stretch;
+    box-orient: horizontal;
+    flex-flow: row;
+    flex-direction: row;
   }
   .diff_left,.diff_right {
     flex: 1;
