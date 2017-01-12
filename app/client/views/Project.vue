@@ -39,15 +39,21 @@
     </el-tabs>
     <el-dialog class="diff_dialog" title="代码diff" v-model="showDirDiffDialog" size="full">
       <div v-loading="isDirDiffLoading" class="diff_container">
-        <diff-list :diffSet="dirDiff.diffSet" @fileClick="onFileClick"></diff-list>
-        <div class="diff_wrapper">
-          <div class="diff_left">
-            <h3 class="diff_left_title">编译结果</h3>
-            <code-show :codeData="leftFileCode" v-show="showFileDiff"></code-show>
-          </div>
-          <div class="diff_right">
-            <h3 class="diff_right_title">基线版本</h3>
-            <code-show :codeData="rightFileCode" v-show="showFileDiff"></code-show>
+        <div class="diff_files">
+          <h3 class="diff_title">影响到的文件</h3>
+          <diff-list :diffSet="dirDiff.diffSet" @fileClick="onFileClick"></diff-list>
+        </div>
+        <div class="diff_single" v-if="showFileDiff">
+          <h3 class="diff_title" v-show="!!currentDiffFile">查看文件：{{ currentDiffFile }}</h3>
+          <div class="diff_wrapper">
+            <div class="diff_left">
+              <h4 class="diff_left_title">编译结果</h4>
+              <code-show :codeData="leftFileCode" v-show="showFileDiff"></code-show>
+            </div>
+            <div class="diff_right">
+              <h4 class="diff_right_title">基线版本</h4>
+              <code-show :codeData="rightFileCode" v-show="showFileDiff"></code-show>
+            </div>
           </div>
         </div>
       </div>
@@ -71,7 +77,8 @@
         activeTabName: 'sourceRepo',
         isDirDiffLoading: false,
         showDirDiffDialog: false,
-        showFileDiff: false
+        showFileDiff: false,
+        currentDiffFile: ''
       }
     },
 
@@ -145,6 +152,7 @@
 
       async projectDiff () {
         this.showDirDiffDialog = true;
+        this.showFileDiff = false;
         this.initDiff();
         this.isDirDiffLoading = true;
         await this.getDiff({
@@ -195,6 +203,7 @@
           params[item.state] = item.fullname;
         }
         await this.getDiff(params);
+        this.currentDiffFile = item.fullname;
         this.showFileDiff = true;
       }
     },
@@ -258,13 +267,9 @@
     font-size: 16px;
     border: 1px solid #EFF0EC;
     padding: 15px 0;
-    display: -webkit-box;
-    display: -ms-flexbox;
     display: flex;
-    -ms-flex-flow: row no-wrap;
     flex-flow: row no-wrap;
     -webkit-box-pack: justify;
-    -ms-flex-pack: justify;
     justify-content: space-between;
   }
   .project_info.passed {
@@ -283,16 +288,12 @@
     font-size: 16px;
     overflow: hidden;
     position: relative;
-    -webkit-box-flex: 0;
-    -ms-flex: 0 1 55%;
     flex: 0 1 55%;
     padding-left: 30px;
   }
   .project_build {
     font-size: 15px;
     padding-left: 28px;
-    -webkit-box-flex: 0;
-    -ms-flex: 0 1 37%;
     flex: 0 1 37%;
   }
   .project_commit_list,.project_build_list {
@@ -306,8 +307,6 @@
     padding-top: 15px;
   }
   .project_operate {
-    -webkit-box-flex: 0;
-    -ms-flex: 0 1 110px;
     flex: 0 1 110px;
     overflow: hidden;
   }
@@ -326,5 +325,26 @@
   .diff_left,.diff_right {
     flex: 1;
     width: 50%;
+  }
+  .diff_right {
+    border-left: 1px solid #ddd;
+  }
+  .diff_files,.diff_single {
+    border: 1px solid #ddd;
+    margin-bottom: 15px;
+  }
+  .diff_title {
+    padding: 8px 12px;
+    background-color: #E5E9F2;
+    color: #222;
+    font-weight: 400;
+  }
+  .diff_files .file_diff {
+    padding: 8px 12px;
+  }
+  .diff_left_title,.diff_right_title {
+    padding: 6px 12px;
+    font-weight: 700;
+    border-bottom: 1px solid #efefef;
   }
 </style>
