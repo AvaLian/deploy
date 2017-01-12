@@ -5,13 +5,16 @@
   line-height: 19px;
   white-space: pre-wrap;
   word-wrap: break-word;
-  background-color: #f1f1f1;
+  background-color: #fff;
   counter-reset: line-numbering;
   margin-top: 0;
 }
 
-.code_show .highlight {
-  background-color: #ff4949;
+.code_show .highlight.removed {
+  background-color: #ffecec;
+}
+.code_show .highlight.added {
+  background-color: #eaffea;
 }
 .code_show_line {
   padding: 0 15px 0 15px;
@@ -19,7 +22,7 @@
   min-height: 16px;
 }
 .code_show_line:hover {
-  background-color: #444;
+  background-color: #efefef;
 }
 
 .code_show_line_num:before {

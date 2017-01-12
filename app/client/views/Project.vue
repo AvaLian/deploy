@@ -96,8 +96,8 @@
         let res = [];
         diffSet.forEach(item => {
           let value = item.value.split('\n');
-          if (item.removed && !item.added) {
-            res = res.concat(value.map(s => ({code: s, different: true})).filter(i => i.code));
+          if (!item.removed && item.added) {
+            res = res.concat(value.map(s => ({code: s, different: true, type: 'added'})).filter(i => i.code));
           } else if (!item.removed && !item.added) {
             res = res.concat(value.map(s => ({code: s, different: false})).filter(i => i.code));
           }
@@ -110,8 +110,8 @@
         let res = [];
         diffSet.forEach(item => {
           let value = item.value.split('\n');
-          if (!item.removed && item.added) {
-            res = res.concat(value.map(s => ({code: s, different: true})).filter(i => i.code));
+          if (item.removed && !item.added) {
+            res = res.concat(value.map(s => ({code: s, different: true, type: 'removed'})).filter(i => i.code));
           } else if (!item.removed && !item.added) {
             res = res.concat(value.map(s => ({code: s, different: false})).filter(i => i.code));
           }

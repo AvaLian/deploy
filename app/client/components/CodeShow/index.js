@@ -9,7 +9,7 @@ export default {
     const codeData = this.codeData || [];
     const text = codeData.map(item => {
       return (
-        <div class={{ 'highlight': item.different, 'code_show_line': true }}>
+        <div class={{ 'highlight': item.different, 'code_show_line': true, [item.type]: true }}>
           <span class="code_show_line_num"></span><span domPropsInnerHTML={ item.code }></span>
         </div>
       );

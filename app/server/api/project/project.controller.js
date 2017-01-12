@@ -244,7 +244,7 @@ export async function getOnlineDiff (ctx) {
         return;
       }
       const jsdiff = require('diff');
-      const diffResult = jsdiff.diffLines(leftFileContent, rightFileContent);
+      const diffResult = jsdiff.diffLines(rightFileContent, leftFileContent);
       ctx.body = {
         errCode: 0,
         errMsg: 'success',
