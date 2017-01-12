@@ -39,15 +39,16 @@
     </el-tabs>
     <el-dialog class="diff_dialog" title="代码diff" v-model="showDirDiffDialog" size="full">
       <div v-loading="isDirDiffLoading" class="diff_container">
-        <div class="diff_left">
-          <h3 class="diff_left_title">编译结果</h3>
-          <tree-view class="diff_left_tree" @fileClick="onFileClick" :treeDiff="dirDiff.diffSet" :treeData="dirDiff.left" />
-          <code-show :codeData="leftFileCode" v-show="showFileDiff"></code-show>
-        </div>
-        <div class="diff_right">
-          <h3 class="diff_right_title">基线版本</h3>
-          <tree-view class="diff_right_tree" @fileClick="onFileClick" :treeDiff="dirDiff.diffSet" :treeData="dirDiff.right" />
-          <code-show :codeData="rightFileCode" v-show="showFileDiff"></code-show>
+        <diff-list :diffSet="dirDiff.diffSet" @fileClick="onFileClick"></diff-list>
+        <div class="diff_wrapper">
+          <div class="diff_left">
+            <h3 class="diff_left_title">编译结果</h3>
+            <code-show :codeData="leftFileCode" v-show="showFileDiff"></code-show>
+          </div>
+          <div class="diff_right">
+            <h3 class="diff_right_title">基线版本</h3>
+            <code-show :codeData="rightFileCode" v-show="showFileDiff"></code-show>
+          </div>
         </div>
       </div>
     </el-dialog>
@@ -58,7 +59,7 @@
   import 'highlight.js/styles/xcode.css';
 
   import BuildRecord from '../components/BuildRecord';
-  import TreeView from '../components/TreeView';
+  import DiffList from '../components/DiffList';
   import CodeShow from '../components/CodeShow';
   import router from '../router';
 
@@ -76,7 +77,7 @@
 
     components: {
       BuildRecord,
-      TreeView,
+      DiffList,
       CodeShow
     },
 
@@ -186,10 +187,10 @@
         let params = {
           id: this.project._id
         };
-        if (item.pos === 'equal' || item.pos === 'distinct') {
-          params.left = params.right = `${item.relative}/${item.name}`;
+        if (item.state === 'equal' || item.state === 'distinct') {
+          params.left = params.right = item.fullname;
         } else {
-          params[item.pos] = `${item.relative}/${item.name}`;
+          params[item.state] = item.fullname;
         }
         await this.getDiff(params);
         this.showFileDiff = true;
@@ -314,7 +315,7 @@
   .diff_dialog {
     margin-top: 50px;
   }
-  .diff_container {
+  .diff_wrapper {
     display: flex;
     box-orient: horizontal;
     flex-flow: row;
