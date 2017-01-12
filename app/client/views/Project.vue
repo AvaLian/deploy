@@ -130,7 +130,8 @@
         'buildProject',
         'getBuildRecord',
         'modifyProjectBuildStatus',
-        'getDiff'
+        'getDiff',
+        'initDiff'
       ]),
 
       async buildProjectById () {
@@ -144,6 +145,7 @@
 
       async projectDiff () {
         this.showDirDiffDialog = true;
+        this.initDiff();
         this.isDirDiffLoading = true;
         await this.getDiff({
           id: this.project._id

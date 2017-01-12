@@ -1,13 +1,12 @@
 import Vue from 'vue';
 import { INTERFACE } from '../../config';
 
+const INIT_DIFF = 'INIT_DIFF';
 const GET_DIR_DIFF = 'GET_DIR_DIFF';
 const GET_FILE_DIFF = 'GET_FILE_DIFF';
 
 const state = {
   dirDiff: {
-    left: [],
-    right: [],
     diffSet: []
   },
   fileDiff: {
@@ -16,6 +15,14 @@ const state = {
 };
 
 const mutations = {
+  [INIT_DIFF] (state) {
+    state.dirDiff = {
+      diffSet: []
+    };
+    state.fileDiff = {
+      diffSet: []
+    };
+  },
   [GET_DIR_DIFF] (state, { diff }) {
     state.dirDiff = diff;
   },
@@ -25,6 +32,9 @@ const mutations = {
 };
 
 const actions = {
+  initDiff ({ commit }) {
+    commit(INIT_DIFF);
+  },
   async getDiff ({ commit }, { id, left, right }) {
     const res = await Vue.http.get(`${INTERFACE.PROJECTS}/${id}/diff`, {
       params: {
