@@ -16,12 +16,19 @@
   background-color: #eaffea;
 }
 .code_show_line {
-  padding: 0 15px 0 15px;
+  padding: 0 15px 0 45px;
   margin: 0;
   min-height: 16px;
 }
 .code_show_line:hover {
   background-color: #efefef;
+}
+.code_show_line_num {
+  display: inline-block;
+  text-align: right;
+  min-width: 40px;
+  margin-left: -33px;
+  cursor: pointer;
 }
 
 .code_show_line_num:before {

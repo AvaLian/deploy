@@ -43,7 +43,7 @@
           <h3 class="diff_title">影响到的文件</h3>
           <diff-list :diffSet="dirDiff.diffSet" @fileClick="onFileClick"></diff-list>
         </div>
-        <div class="diff_single" v-if="showFileDiff">
+        <div class="diff_single" v-show="showFileDiff" v-loading="isfileDiffLoading">
           <h3 class="diff_title" v-show="!!currentDiffFile">查看文件：{{ currentDiffFile }}</h3>
           <div class="diff_wrapper">
             <div class="diff_left">
@@ -78,6 +78,7 @@
         isDirDiffLoading: false,
         showDirDiffDialog: false,
         showFileDiff: false,
+        isfileDiffLoading: false,
         currentDiffFile: ''
       }
     },
@@ -138,7 +139,8 @@
         'getBuildRecord',
         'modifyProjectBuildStatus',
         'getDiff',
-        'initDiff'
+        'initDiff',
+        'initFileDiff'
       ]),
 
       async buildProjectById () {
@@ -197,12 +199,15 @@
         let params = {
           id: this.project._id
         };
+        this.isfileDiffLoading = true;
+        this.initFileDiff();
         if (item.state === 'equal' || item.state === 'distinct') {
           params.left = params.right = item.fullname;
         } else {
           params[item.state] = item.fullname;
         }
         await this.getDiff(params);
+        this.isfileDiffLoading = false;
         this.currentDiffFile = item.fullname;
         this.showFileDiff = true;
       }

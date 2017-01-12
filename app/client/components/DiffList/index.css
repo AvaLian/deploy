@@ -1,3 +1,22 @@
 .file_diff_item {
   padding: 2px 4px;
 }
+.file_diff_item.active {
+  background: #58B7FF;
+}
+
+.file_diff_item.active>a {
+  color: #fff;
+}
+.file_diff_extra_lk {
+  padding: 3px 6px;
+  background-color: #D3DCE6;
+  margin-right: 8px;
+}
+.file_diff_extra_lk.active {
+  background-color: #20A0FF;
+  color: #fff;
+}
+.file_diff_extra_dirs {
+  margin: 10px 0;
+}
