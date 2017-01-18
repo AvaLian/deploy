@@ -245,6 +245,39 @@ export async function getOnlineDiff (ctx) {
       }
       const jsdiff = require('diff');
       const diffResult = jsdiff.diffLines(rightFileContent, leftFileContent);
+      // 处理一下diff结果
+      for (let i = 0; i < diffResult.length; i++) {
+        const current = diffResult[i];
+        const next = diffResult[i + 1];
+        let charsDiff;
+        if (current.added && !current.both) {
+          if (next && next.removed && current.count === next.count) {
+            current.both = true;
+            next.both = true;
+            charsDiff = jsdiff.diffChars(next.value, current.value);
+            charsDiff.forEach(s => {
+              if (s.added) {
+                current.value = current.value.replace(s.value, `<span class="char_highlight added">${s.value}</span>`);
+              } else if (s.removed) {
+                next.value = next.value.replace(s.value, `<span class="char_highlight removed">${s.value}</span>`);
+              }
+            });
+          }
+        } else if (current.removed && !current.both) {
+          if (next && next.added && current.count === next.count) {
+            current.both = true;
+            next.both = true;
+            charsDiff = jsdiff.diffChars(current.value, next.value);
+            charsDiff.forEach(s => {
+              if (s.added) {
+                next.value = next.value.replace(s.value, `<span class="char_highlight added">${s.value}</span>`);
+              } else if (s.removed) {
+                current.value = current.value.replace(s.value, `<span class="char_highlight removed">${s.value}</span>`);
+              }
+            });
+          }
+        }
+      }
       ctx.body = {
         errCode: 0,
         errMsg: 'success',

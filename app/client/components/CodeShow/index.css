@@ -12,8 +12,14 @@
 .code_show .highlight.removed {
   background-color: #ffecec;
 }
+.code_show .highlight.removed .char_highlight {
+  background-color: #f9b6b6;
+}
 .code_show .highlight.added {
   background-color: #eaffea;
+}
+.code_show .highlight.added .char_highlight {
+  background-color: #9cf59c;
 }
 .code_show_line {
   padding: 0 15px 0 45px;

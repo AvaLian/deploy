@@ -108,6 +108,8 @@
             res = res.concat(value.map(s => ({code: s, different: true, type: 'added'})).filter(i => i.code));
           } else if (!item.removed && !item.added) {
             res = res.concat(value.map(s => ({code: s, different: false})).filter(i => i.code));
+          } else if (item.removed && !item.added && !item.both) {
+            res = res.concat(value.map(s => {if (s && s.length) {return {code: '', different: true, type: 'added'}}}).filter(i => i));
           }
         });
         return res;
@@ -122,6 +124,8 @@
             res = res.concat(value.map(s => ({code: s, different: true, type: 'removed'})).filter(i => i.code));
           } else if (!item.removed && !item.added) {
             res = res.concat(value.map(s => ({code: s, different: false})).filter(i => i.code));
+          } else if (!item.removed && item.added && !item.both) {
+            res = res.concat(value.map(s => {if (s && s.length) {return {code: '', different: true, type: 'removed'}}}).filter(i => i));
           }
         });
         return res;
