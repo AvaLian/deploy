@@ -24,6 +24,26 @@ export default {
       } else {
         this.extraDirs.splice(index, 1);
       }
+      try {
+        const localStorage = window.localStorage;
+        if (localStorage) {
+          localStorage.setItem('diff_list/extraDirs', JSON.stringify(this.extraDirs));
+        }
+      } catch (ex) {
+        console.log(ex);
+      }
+    }
+  },
+
+  created () {
+    try {
+      const localStorage = window.localStorage;
+      if (localStorage) {
+        this.extraDirs = JSON.parse(localStorage.getItem('diff_list/extraDirs')) || [];
+      }
+    } catch (ex) {
+      console.log(ex);
+      this.extraDirs = [];
     }
   },
   
