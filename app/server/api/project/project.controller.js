@@ -255,26 +255,40 @@ export async function getOnlineDiff (ctx) {
             current.both = true;
             next.both = true;
             charsDiff = jsdiff.diffChars(next.value, current.value);
+            let nextCharsCollection = [];
+            let currentCharsCollection = [];
             charsDiff.forEach(s => {
               if (s.added) {
-                current.value = current.value.replace(s.value, `<span class="char_highlight added">${s.value}</span>`);
+                currentCharsCollection.push(`<span class="char_highlight added">${s.value}</span>`);
               } else if (s.removed) {
-                next.value = next.value.replace(s.value, `<span class="char_highlight removed">${s.value}</span>`);
+                nextCharsCollection.push(`<span class="char_highlight removed">${s.value}</span>`);
+              } else if (!s.added && !s.removed) {
+                nextCharsCollection.push(s.value);
+                currentCharsCollection.push(s.value);
               }
             });
+            next.value = nextCharsCollection.join('');
+            current.value = currentCharsCollection.join('');
           }
         } else if (current.removed && !current.both) {
           if (next && next.added && current.count === next.count) {
             current.both = true;
             next.both = true;
             charsDiff = jsdiff.diffChars(current.value, next.value);
+            let nextCharsCollection = [];
+            let currentCharsCollection = [];
             charsDiff.forEach(s => {
               if (s.added) {
-                next.value = next.value.replace(s.value, `<span class="char_highlight added">${s.value}</span>`);
+                nextCharsCollection.push(`<span class="char_highlight added">${s.value}</span>`);
               } else if (s.removed) {
-                current.value = current.value.replace(s.value, `<span class="char_highlight removed">${s.value}</span>`);
+                currentCharsCollection.push(`<span class="char_highlight removed">${s.value}</span>`);
+              } else if (!s.added && !s.removed) {
+                nextCharsCollection.push(s.value);
+                currentCharsCollection.push(s.value);
               }
             });
+            next.value = nextCharsCollection.join('');
+            current.value = currentCharsCollection.join('');
           }
         }
       }
