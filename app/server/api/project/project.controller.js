@@ -245,13 +245,20 @@ export async function getOnlineDiff (ctx) {
       }
       const jsdiff = require('diff');
       const diffResult = jsdiff.diffLines(rightFileContent, leftFileContent);
+      const diffInfo = {
+        total: 0
+      };
       // 处理一下diff结果
       for (let i = 0; i < diffResult.length; i++) {
         const current = diffResult[i];
         const next = diffResult[i + 1];
+        const prev = diffResult[i - 1];
         let charsDiff;
         if (current.added && !current.both) {
-          if (next && next.removed && current.count === next.count) {
+          if (!prev || !prev.removed) {
+            diffInfo.total += 1;
+          }
+          if (next && next.removed) {
             current.both = true;
             next.both = true;
             charsDiff = jsdiff.diffChars(next.value, current.value);
@@ -271,7 +278,8 @@ export async function getOnlineDiff (ctx) {
             current.value = currentCharsCollection.join('');
           }
         } else if (current.removed && !current.both) {
-          if (next && next.added && current.count === next.count) {
+          diffInfo.total += 1;
+          if (next && next.added) {
             current.both = true;
             next.both = true;
             charsDiff = jsdiff.diffChars(current.value, next.value);
@@ -296,7 +304,8 @@ export async function getOnlineDiff (ctx) {
         errCode: 0,
         errMsg: 'success',
         data: {
-          diffSet: diffResult
+          diffSet: diffResult,
+          diffInfo
         }
       };
     } else {
