@@ -63,15 +63,16 @@ export default {
           'distinct' : '修改'
         }[entry.state];
         const txt = `${state}文件：${entry.fullname}`;
-        let show = true;
+        let showItem = true;
         this.extraDirs.forEach(dir => {
           if (entry.relativePath.indexOf(dir) >= 0) {
-            show = false;
+            showItem = false;
           }
         });
-        if (show) {
+        let mark = entry.marked ? <span class="file_diff_mark">通过</span> : '';
+        if (showItem) {
           return (
-            <li class={{ file_diff_item: true, active: this.activeIndex === i }}><a href="javascript:;" onClick={this.onFileClick.bind(this, entry, i)}>{txt}</a></li>
+            <li class={{ file_diff_item: true, active: this.activeIndex === i }}><a href="javascript:;" onClick={this.onFileClick.bind(this, entry, i)}>{txt}</a>{mark}</li>
           );
         }
       }
@@ -82,6 +83,7 @@ export default {
         <a href="javascript:;" class={{ file_diff_extra_lk: true, active: this.extraDirs.indexOf(dir) >= 0 }} onClick={this.toggleExtra.bind(this, dir)}>{dir}</a>
       );
     });
+    this.$emit('renderEnd', diffList.length);
     return (
       <div class="file_diff">
         <div class="file_diff_extra">

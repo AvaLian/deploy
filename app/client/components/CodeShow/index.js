@@ -9,7 +9,7 @@ export default {
   methods: {
     check (item, i) {
       item.checked = !item.checked;
-      this.$emit('addMask', item.checked, i);
+      this.$emit('toggleMask', item.checked, i);
     }
   },
   render (h) {

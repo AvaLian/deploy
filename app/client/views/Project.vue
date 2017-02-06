@@ -26,7 +26,7 @@
           </div>
           <div class="project_operate">
             <p v-if="project.buildStatus === 1"><el-button class="project_diffbtn" type="primary" @click="projectDiff" :loading="isBuilding">代码diff</el-button></p>
-            <p v-if="project.buildStatus === 1"><el-button class="project_onlinebtn" type="primary" @click="projectOnline" :loading="isBuilding">上线</el-button></p>
+            <p v-if="project.buildStatus === 1 && canDoOnline"><el-button class="project_onlinebtn" type="primary" @click="projectOnline" :loading="isBuilding">上线</el-button></p>
           </div>
         </div>
         <div class="project_log" v-show="!isSourceRepoInfoLoading">
@@ -41,18 +41,18 @@
       <div v-loading="isDirDiffLoading" class="diff_container">
         <div class="diff_files">
           <h3 class="diff_title">影响到的文件</h3>
-          <diff-list :diffSet="dirDiff.diffSet" @fileClick="onFileClick"></diff-list>
+          <diff-list :diffSet="dirDiffSet" @fileClick="onFileClick" @renderEnd="onDiffListRenderEnd"></diff-list>
         </div>
         <div class="diff_single" v-show="showFileDiff" v-loading="isfileDiffLoading">
-          <h3 class="diff_title" v-show="!!currentDiffFile">查看文件：{{ currentDiffFile }}</h3>
+          <h3 class="diff_title" v-show="!!currentDiffFile">查看文件：{{ currentDiffFile }}<span class="diff_total">代码差异：<strong class="diff_total_count">{{ fileCodeDiffCount }}</strong>处</span></h3>
           <div class="diff_wrapper">
             <div class="diff_left">
               <h4 class="diff_left_title">编译结果</h4>
-              <code-show :codeData="leftFileCode" :codeMark="getCodeMark" v-show="showFileDiff" @addMask="onAddMask"></code-show>
+              <code-show :codeData="leftFileCode" :codeMark="getCodeMark" v-show="showFileDiff" @toggleMask="onToggleMask"></code-show>
             </div>
             <div class="diff_right">
               <h4 class="diff_right_title">基线版本</h4>
-              <code-show :codeData="rightFileCode" :codeMark="getCodeMark" v-show="showFileDiff" @addMask="onAddMask"></code-show>
+              <code-show :codeData="rightFileCode" :codeMark="getCodeMark" v-show="showFileDiff" @toggleMask="onToggleMask"></code-show>
             </div>
           </div>
         </div>
@@ -80,7 +80,10 @@
         showDirDiffDialog: false,
         showFileDiff: false,
         isfileDiffLoading: false,
-        currentDiffFile: ''
+        currentDiffFile: '',
+        needDiffFileCount: 0,
+        markedFileCount: 0,
+        canDoOnline: false
       }
     },
 
@@ -141,6 +144,18 @@
         }
         const codeMark = this.codeMark[projectId][fileName];
         return codeMark;
+      },
+
+      fileCodeDiffCount () {
+        const diffInfo = this.fileDiff.diffInfo;
+        if (diffInfo) {
+          return diffInfo.total;
+        }
+        return 0;
+      },
+
+      dirDiffSet () {
+        return this.dirDiff.diffSet;
       }
     },
 
@@ -157,6 +172,7 @@
         'getDiff',
         'initDiff',
         'initFileDiff',
+        'markDiffFile',
         'addMark',
         'removeMark'
       ]),
@@ -230,7 +246,11 @@
         this.showFileDiff = true;
       },
 
-      onAddMask (checked, lineNum) {
+      onDiffListRenderEnd (listCount) {
+        this.needDiffFileCount = listCount;
+      },
+
+      onToggleMask (checked, lineNum) {
         const projectId = this.project._id;
         const fileName = this.currentDiffFile;
         if (checked) {
@@ -239,12 +259,31 @@
             fileName,
             lineNum
           });
+          if (this.getCodeMark.length >= this.fileCodeDiffCount) {
+            this.markDiffFile({ diffFile: fileName });
+            this.$message({
+              message: '恭喜，当前文件的所有差异都已标记完毕！',
+              type: 'success'
+            });
+            this.markedFileCount++;
+            if (this.markedFileCount > 0 && this.markedFileCount === this.needDiffFileCount) {
+              this.$confirm('所有差异文件均已标记完毕，可以开始上线！', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'success'
+              }).then(() => {
+                this.showDirDiffDialog = false;
+                this.canDoOnline = true;
+              });
+            }
+          }
         } else {
           this.removeMark({
             projectId,
             fileName,
             lineNum
           });
+          this.markedFileCount--;
         }
       }
     },
@@ -365,9 +404,6 @@
   .project_diffbtn {
     margin-bottom: 16px;
   }
-  .diff_dialog {
-    margin-top: 50px;
-  }
   .diff_wrapper {
     display: flex;
     box-orient: horizontal;
@@ -398,5 +434,14 @@
     padding: 6px 12px;
     font-weight: 700;
     border-bottom: 1px solid #efefef;
+  }
+  .diff_total {
+    margin-left: 16px;
+    font-size: 14px;
+  }
+  .diff_total_count {
+    color: #FF4949;
+    font-style: normal;
+    font-size: 16px;
   }
 </style>
