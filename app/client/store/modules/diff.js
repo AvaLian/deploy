@@ -39,13 +39,17 @@ const mutations = {
   [GET_FILE_DIFF] (state, { diff }) {
     state.fileDiff = diff;
   },
-  [MARK_DIFF_FILE] (state, { diffFile }) {
+  [MARK_DIFF_FILE] (state, { diffFile, type }) {
     let dirDiffClone = Object.assign({}, state.dirDiff);
     let different = {};
     let index = -1;
     dirDiffClone.diffSet.forEach((item, i) => {
       if (item.fullname === diffFile) {
-        item.marked = true;
+        if (type === 'add') {
+          item.marked = true;
+        } else if (type === 'remove') {
+          item.marked = false;
+        }
         different = item;
         index = i;
       }
@@ -77,8 +81,8 @@ const actions = {
     }
   },
 
-  markDiffFile ({ commit }, { diffFile }) {
-    commit(MARK_DIFF_FILE, { diffFile });
+  markDiffFile ({ commit }, { diffFile, type }) {
+    commit(MARK_DIFF_FILE, { diffFile, type });
   }
 };
 

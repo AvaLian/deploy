@@ -260,7 +260,7 @@
             lineNum
           });
           if (this.getCodeMark.length >= this.fileCodeDiffCount) {
-            this.markDiffFile({ diffFile: fileName });
+            this.markDiffFile({ diffFile: fileName, type: 'add' });
             this.$message({
               message: '恭喜，当前文件的所有差异都已标记完毕！',
               type: 'success'
@@ -283,7 +283,10 @@
             fileName,
             lineNum
           });
-          this.markedFileCount--;
+          if (this.getCodeMark.length === 0) {
+            this.markDiffFile({ diffFile: fileName, type: 'remove' });
+            this.markedFileCount--;
+          }
         }
       }
     },

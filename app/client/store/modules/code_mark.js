@@ -23,15 +23,13 @@ const mutations = {
     state.mark = markClone;
   },
   [REMOVE_MARK] (state, { projectId, fileName, lineNum }) {
-    let markClone = Object.assign({}, state.mark);
-    let fileInfo = markClone[projectId][fileName];
+    let fileInfo = state.mark[projectId][fileName];
     if (fileInfo) {
       const index = fileInfo.indexOf(lineNum);
       if (index >= 0) {
         fileInfo.splice(index, 1);
       }
     }
-    state.mark = markClone;
   }
 };
 
