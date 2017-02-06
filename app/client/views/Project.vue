@@ -48,11 +48,11 @@
           <div class="diff_wrapper">
             <div class="diff_left">
               <h4 class="diff_left_title">编译结果</h4>
-              <code-show :codeData="leftFileCode" v-show="showFileDiff"></code-show>
+              <code-show :codeData="leftFileCode" :codeMark="getCodeMark" v-show="showFileDiff" @addMask="onAddMask"></code-show>
             </div>
             <div class="diff_right">
               <h4 class="diff_right_title">基线版本</h4>
-              <code-show :codeData="rightFileCode" v-show="showFileDiff"></code-show>
+              <code-show :codeData="rightFileCode" :codeMark="getCodeMark" v-show="showFileDiff" @addMask="onAddMask"></code-show>
             </div>
           </div>
         </div>
@@ -64,6 +64,7 @@
   import { mapGetters, mapActions } from 'vuex';
   import 'highlight.js/styles/xcode.css';
 
+  import { isEmptyObject } from '../util';
   import BuildRecord from '../components/BuildRecord';
   import DiffList from '../components/DiffList';
   import CodeShow from '../components/CodeShow';
@@ -96,7 +97,8 @@
         'onlineRepoInfo',
         'buildRecord',
         'dirDiff',
-        'fileDiff'
+        'fileDiff',
+        'codeMark'
       ]),
 
       leftFileCode () {
@@ -129,6 +131,16 @@
           }
         });
         return res;
+      },
+
+      getCodeMark () {
+        const projectId = this.project._id;
+        const fileName = this.currentDiffFile;
+        if (!fileName || isEmptyObject(this.codeMark)) {
+          return [];
+        }
+        const codeMark = this.codeMark[projectId][fileName];
+        return codeMark;
       }
     },
 
@@ -144,7 +156,9 @@
         'modifyProjectBuildStatus',
         'getDiff',
         'initDiff',
-        'initFileDiff'
+        'initFileDiff',
+        'addMark',
+        'removeMark'
       ]),
 
       async buildProjectById () {
@@ -214,6 +228,24 @@
         this.isfileDiffLoading = false;
         this.currentDiffFile = item.fullname;
         this.showFileDiff = true;
+      },
+
+      onAddMask (checked, lineNum) {
+        const projectId = this.project._id;
+        const fileName = this.currentDiffFile;
+        if (checked) {
+          this.addMark({
+            projectId,
+            fileName,
+            lineNum
+          });
+        } else {
+          this.removeMark({
+            projectId,
+            fileName,
+            lineNum
+          });
+        }
       }
     },
 
@@ -241,6 +273,17 @@
           // 拉取上一次编译log
           const id = this.$route.params.id;
           this.getBuildRecord({ id });
+        }
+      },
+      codeMark (codeMark) {
+        if (!codeMark) {
+          const projectId = this.project._id;
+          const fileName = this.currentDiffFile;
+          if (!fileName || isEmptyObject(codeMark)) {
+            return [];
+          }
+          const codeMark = codeMark[projectId][fileName];
+          this.getCodeMark = codeMark;
         }
       }
     }

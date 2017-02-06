@@ -48,9 +48,6 @@
   position: absolute;
   top: 4px;
   left: 28px;
-  display: none;
-  cursor: pointer;
-}
-.code_show_line:hover .code_show_check {
   display: block;
+  cursor: pointer;
 }

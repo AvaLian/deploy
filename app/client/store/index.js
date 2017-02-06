@@ -5,6 +5,7 @@ import createLogger from 'vuex/dist/logger';
 import projects from './modules/projects';
 import project from './modules/project';
 import diff from './modules/diff';
+import codeMark from './modules/code_mark';
 
 Vue.use(Vuex);
 
@@ -14,7 +15,8 @@ export default new Vuex.Store({
   modules: {
     projects,
     project,
-    diff
+    diff,
+    codeMark
   },
   strict: debug,
   plugins: debug ? [createLogger()] : []
