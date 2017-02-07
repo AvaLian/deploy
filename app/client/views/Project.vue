@@ -251,7 +251,7 @@
         this.currentDiffFile = fileName;
         const buildId = this.buildRecord._id;
         const currentBuildMark = this.codeMark[buildId];
-        if (this.fileCodeDiffCount === currentBuildMark[fileName].length) {
+        if (currentBuildMark && currentBuildMark[fileName] && this.fileCodeDiffCount === currentBuildMark[fileName].length) {
           this.markDiffFile({ diffFile: fileName, type: 'add' });
           this.$message({
             message: '恭喜，当前文件的所有差异都已标记完毕！',
