@@ -137,12 +137,12 @@
       },
 
       getCodeMark () {
-        const projectId = this.project._id;
+        const buildId = this.buildRecord._id;
         const fileName = this.currentDiffFile;
         if (!fileName || isEmptyObject(this.codeMark)) {
           return [];
         }
-        const codeMark = this.codeMark[projectId][fileName];
+        const codeMark = this.codeMark[buildId][fileName];
         return codeMark;
       },
 
@@ -173,6 +173,7 @@
         'initDiff',
         'initFileDiff',
         'markDiffFile',
+        'getMark',
         'addMark',
         'removeMark'
       ]),
@@ -193,6 +194,10 @@
         this.isDirDiffLoading = true;
         await this.getDiff({
           id: this.project._id
+        });
+        const buildId = this.buildRecord._id;
+        await this.getMark({
+          buildId
         });
         this.isDirDiffLoading = false;
       },
@@ -235,14 +240,25 @@
         };
         this.isfileDiffLoading = true;
         this.initFileDiff();
+        const fileName = item.fullname;
         if (item.state === 'equal' || item.state === 'distinct') {
-          params.left = params.right = item.fullname;
+          params.left = params.right = fileName;
         } else {
-          params[item.state] = item.fullname;
+          params[item.state] = ifileName;
         }
         await this.getDiff(params);
         this.isfileDiffLoading = false;
-        this.currentDiffFile = item.fullname;
+        this.currentDiffFile = fileName;
+        const buildId = this.buildRecord._id;
+        const currentBuildMark = this.codeMark[buildId];
+        if (this.fileCodeDiffCount === currentBuildMark[fileName].length) {
+          this.markDiffFile({ diffFile: fileName, type: 'add' });
+          this.$message({
+            message: '恭喜，当前文件的所有差异都已标记完毕！',
+            type: 'success'
+          });
+          this.markedFileCount++;
+        }
         this.showFileDiff = true;
       },
 
@@ -250,12 +266,12 @@
         this.needDiffFileCount = listCount;
       },
 
-      onToggleMask (checked, lineNum) {
-        const projectId = this.project._id;
+      async onToggleMask (checked, lineNum) {
+        const buildId = this.buildRecord._id;
         const fileName = this.currentDiffFile;
         if (checked) {
-          this.addMark({
-            projectId,
+          await this.addMark({
+            buildId,
             fileName,
             lineNum
           });
@@ -278,12 +294,12 @@
             }
           }
         } else {
-          this.removeMark({
-            projectId,
+          await this.removeMark({
+            buildId,
             fileName,
             lineNum
           });
-          if (this.getCodeMark.length === 0) {
+          if (this.getCodeMark.length < this.fileCodeDiffCount) {
             this.markDiffFile({ diffFile: fileName, type: 'remove' });
             this.markedFileCount--;
           }
@@ -319,12 +335,12 @@
       },
       codeMark (codeMark) {
         if (!codeMark) {
-          const projectId = this.project._id;
+          const buildId = this.buildRecord._id;
           const fileName = this.currentDiffFile;
           if (!fileName || isEmptyObject(codeMark)) {
             return [];
           }
-          const codeMark = codeMark[projectId][fileName];
+          const codeMark = codeMark[buildId][fileName];
           this.getCodeMark = codeMark;
         }
       }

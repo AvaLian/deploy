@@ -1,3 +1,7 @@
+import Vue from 'vue';
+import { INTERFACE } from '../../config';
+
+const GET_MARK = 'GET_MARK';
 const ADD_MARK = 'ADD_MARK';
 const REMOVE_MARK = 'REMOVE_MARK';
 
@@ -8,22 +12,30 @@ const state = {
 };
 
 const mutations = {
-  [ADD_MARK] (state, { projectId, fileName, lineNum }) {
-    let markClone = Object.assign({}, state.mark);
-    if (!markClone[projectId]) {
-      markClone[projectId] = {};
+  [GET_MARK] (state, { buildId, buildMark }) {
+    state.mark[buildId] = buildMark;
+  },
+
+  [ADD_MARK] (state, { buildId, fileName, lineNum }) {
+    let mark = Object.assign({}, state.mark);
+    if (!mark[buildId]) {
+      mark[buildId] = {};
     }
-    let fileInfo = markClone[projectId][fileName];
+    let fileInfo = mark[buildId][fileName];
     if (!fileInfo) {
-      fileInfo = markClone[projectId][fileName] = [];
+      fileInfo = mark[buildId][fileName] = [];
     }
     if (fileInfo.indexOf(lineNum) < 0) {
       fileInfo.push(lineNum);
     }
-    state.mark = markClone;
+    state.mark = mark;
   },
-  [REMOVE_MARK] (state, { projectId, fileName, lineNum }) {
-    let fileInfo = state.mark[projectId][fileName];
+  
+  [REMOVE_MARK] (state, { buildId, fileName, lineNum }) {
+    if (!state.mark[buildId]) {
+      state.mark[buildId] = {};
+    }
+    let fileInfo = state.mark[buildId][fileName];
     if (fileInfo) {
       const index = fileInfo.indexOf(lineNum);
       if (index >= 0) {
@@ -34,12 +46,54 @@ const mutations = {
 };
 
 const actions = {
-  addMark ({ commit }, { projectId, fileName, lineNum }) {
-    commit(ADD_MARK, { projectId, fileName, lineNum });
+  async getMark ({ commit }, { buildId }) {
+    const res = await Vue.http.get(`${INTERFACE.MARKS}/build/${buildId}`);
+    const files = res.body.data ? res.body.data.files : null;
+    let buildMark = {};
+    if (files) {
+      buildMark = JSON.parse(files);
+    }
+    commit(GET_MARK, { buildId, buildMark });
   },
 
-  removeMark ({ commit }, { projectId, fileName, lineNum }) {
-    commit(REMOVE_MARK, { projectId, fileName, lineNum });
+  async addMark ({ commit, state }, { buildId, fileName, lineNum }) {
+    let mark = Object.assign({}, state.mark);
+    if (!mark[buildId]) {
+      mark[buildId] = {};
+    }
+    let fileInfo = mark[buildId][fileName];
+    if (!fileInfo) {
+      fileInfo = mark[buildId][fileName] = [];
+    }
+    let fileInfoClone = fileInfo.slice(0);
+    if (fileInfoClone.indexOf(lineNum) < 0) {
+      fileInfoClone.push(lineNum);
+    }
+    await Vue.http.post(`${INTERFACE.MARKS}/build/${buildId}`, {
+      file: fileName,
+      info: fileInfoClone
+    });
+    commit(ADD_MARK, { buildId, fileName, lineNum });
+  },
+
+  async removeMark ({ commit, state }, { buildId, fileName, lineNum }) {
+    let mark = Object.assign({}, state.mark);
+    if (!mark[buildId]) {
+      mark[buildId] = {};
+    }
+    let fileInfo = mark[buildId][fileName];
+    let fileInfoClone = fileInfo.slice(0);
+    if (fileInfoClone) {
+      const index = fileInfoClone.indexOf(lineNum);
+      if (index >= 0) {
+        fileInfoClone.splice(index, 1);
+      }
+    }
+    await Vue.http.post(`${INTERFACE.MARKS}/build/${buildId}`, {
+      file: fileName,
+      info: fileInfoClone
+    });
+    commit(REMOVE_MARK, { buildId, fileName, lineNum });
   }
 };
 
