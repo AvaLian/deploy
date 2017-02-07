@@ -15,9 +15,11 @@ export default {
   render (h) {
     const codeData = this.codeData || [];
     const codeMark = this.codeMark || [];
+    let lastLineType = '';
     const text = codeData.map((item, i) => {
       item.checked = codeMark.indexOf(i) >= 0 ? true : false;
-      const checkButton = item.different ? <input type="checkbox" class="code_show_check" domPropsChecked={ item.checked } onClick={ this.check.bind(this, item, i) } /> : '';
+      const checkButton = (item.different && lastLineType !== item.type) ? <input type="checkbox" class="code_show_check" domPropsChecked={ item.checked } onClick={ this.check.bind(this, item, i) } /> : '';
+      lastLineType = item.type;
       return (
         <div class={{ 'highlight': item.different, 'code_show_line': true, [item.type]: true }}>
           {checkButton}
