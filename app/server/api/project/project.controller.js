@@ -7,6 +7,8 @@ import hljs from 'highlight.js';
 
 import Project from './project.model.js';
 import { addBuildRecord } from '../build/build.controller.js';
+import { findDirDiffByBuildId, changeDirDiffByBuildId } from '../dirDiff/dirDiff.controller.js';
+import { findFileDiffByBuildId, changeFileDiffByBuildId } from '../fileDiff/fileDiff.controller.js';
 import config from '../../config';
 
 async function getNewestRepo (repo, repoPath) {
@@ -178,12 +180,13 @@ export async function buildProjectById (ctx) {
       operator: '',
       project: project._id
     };
-    await addBuildRecord(buildRecord);
+    const newBuild = await addBuildRecord(buildRecord);
     project.lastBuildDate = new Date;
     project.buildDuration = buildEndTime - buildStartTime;
     project.buildCount = isNaN(project.buildCount) ? 0 : project.buildCount;
     project.buildStatus = buildStatus;
     project.buildCount++;
+    project.lastBuildId = newBuild._id;
     await project.save();
     // 编译完后需要移出到根目录
     shelljs.cd(config.root);
@@ -203,6 +206,7 @@ export async function getOnlineDiff (ctx) {
   try {
     let project = await Project.findById(id);
     const onlineRepo = project.onlineRepo;
+    const buildId = project.lastBuildId;
     const repoDir = path.join(config.root, config.repoDir, id);
     const sourceRepo = path.join(repoDir, `${id}_source`);
     const appConf = require(path.join(sourceRepo, 'app-conf.js'));
@@ -217,161 +221,187 @@ export async function getOnlineDiff (ctx) {
       };
       return;
     }
+    // 判断diff的是文件还是项目目录
     if ('left' in query || 'right' in query) {
       const left = query.left || ''; // 左側文件
       const right = query.right || ''; // 右側文件
-      const leftFilePath = path.join(lastBuildResultDir, left);
-      const rightFilePath = path.join(onlineRepoDir, right);
-      let leftFileContent = '';
-      let rightFileContent = '';
-      const beautifyOptions = { indent_size: 2 };
-      if (left && fse.existsSync(leftFilePath) && fse.statSync(leftFilePath).isFile()) { // 編譯后的文件中有此文件
-        let fileType = path.extname(leftFilePath).replace(/^\./, '');
-        leftFileContent = getBeautifyMethod(fileType)(String(fse.readFileSync(leftFilePath)), beautifyOptions);
-        leftFileContent = hljs.highlight(fileType, leftFileContent, true).value;
-      }
-      if (right && fse.existsSync(rightFilePath) && fse.statSync(rightFilePath).isFile()) { // 基線版本中沒有此文件
-        let fileType = path.extname(rightFilePath).replace(/^\./, '');
-        rightFileContent = getBeautifyMethod(fileType)(String(fse.readFileSync(rightFilePath)), beautifyOptions);
-        rightFileContent = hljs.highlight(fileType, rightFileContent, true).value;
-      }
-      
-      if (leftFileContent.length === 0 && rightFileContent === 0) {
-        ctx.body = {
-          errCode: 101,
-          errMsg: '傳入的文件地址有誤，請檢查！'
-        };
-        return;
-      }
-      const jsdiff = require('diff');
-      const diffResult = jsdiff.diffLines(rightFileContent, leftFileContent);
-      const diffInfo = {
+      const fileDiffFromMemory = await findFileDiffByBuildId(buildId, left || right);
+      let diffInfo = {
         total: 0
       };
-      // 处理一下diff结果
-      for (let i = 0; i < diffResult.length; i++) {
-        const current = diffResult[i];
-        const next = diffResult[i + 1];
-        const prev = diffResult[i - 1];
-        let charsDiff;
-        if (current.added && !current.both) {
-          if (!prev || !prev.removed) {
+      let diffSet = {};
+      if (!fileDiffFromMemory) {
+        const leftFilePath = path.join(lastBuildResultDir, left);
+        const rightFilePath = path.join(onlineRepoDir, right);
+        let leftFileContent = '';
+        let rightFileContent = '';
+        const beautifyOptions = { indent_size: 2 };
+        if (left && fse.existsSync(leftFilePath) && fse.statSync(leftFilePath).isFile()) { // 編譯后的文件中有此文件
+          let fileType = path.extname(leftFilePath).replace(/^\./, '');
+          leftFileContent = getBeautifyMethod(fileType)(String(fse.readFileSync(leftFilePath)), beautifyOptions);
+          leftFileContent = hljs.highlight(fileType, leftFileContent, true).value;
+        }
+        if (right && fse.existsSync(rightFilePath) && fse.statSync(rightFilePath).isFile()) { // 基線版本中沒有此文件
+          let fileType = path.extname(rightFilePath).replace(/^\./, '');
+          rightFileContent = getBeautifyMethod(fileType)(String(fse.readFileSync(rightFilePath)), beautifyOptions);
+          rightFileContent = hljs.highlight(fileType, rightFileContent, true).value;
+        }
+        
+        if (leftFileContent.length === 0 && rightFileContent === 0) {
+          ctx.body = {
+            errCode: 101,
+            errMsg: '傳入的文件地址有誤，請檢查！'
+          };
+          return;
+        }
+        const jsdiff = require('diff');
+        diffSet = jsdiff.diffLines(rightFileContent, leftFileContent);
+        // 处理一下diff结果
+        for (let i = 0; i < diffSet.length; i++) {
+          const current = diffSet[i];
+          const next = diffSet[i + 1];
+          const prev = diffSet[i - 1];
+          let charsDiff;
+          if (current.added && !current.both) {
+            if (!prev || !prev.removed) {
+              diffInfo.total += 1;
+            }
+            if (next && next.removed) {
+              current.both = true;
+              next.both = true;
+              charsDiff = jsdiff.diffChars(next.value, current.value);
+              let nextCharsCollection = [];
+              let currentCharsCollection = [];
+              charsDiff.forEach(s => {
+                if (s.added) {
+                  currentCharsCollection.push(`<span class="char_highlight added">${s.value}</span>`);
+                } else if (s.removed) {
+                  nextCharsCollection.push(`<span class="char_highlight removed">${s.value}</span>`);
+                } else if (!s.added && !s.removed) {
+                  nextCharsCollection.push(s.value);
+                  currentCharsCollection.push(s.value);
+                }
+              });
+              next.value = nextCharsCollection.join('');
+              current.value = currentCharsCollection.join('');
+            }
+          } else if (current.removed && !current.both) {
             diffInfo.total += 1;
-          }
-          if (next && next.removed) {
-            current.both = true;
-            next.both = true;
-            charsDiff = jsdiff.diffChars(next.value, current.value);
-            let nextCharsCollection = [];
-            let currentCharsCollection = [];
-            charsDiff.forEach(s => {
-              if (s.added) {
-                currentCharsCollection.push(`<span class="char_highlight added">${s.value}</span>`);
-              } else if (s.removed) {
-                nextCharsCollection.push(`<span class="char_highlight removed">${s.value}</span>`);
-              } else if (!s.added && !s.removed) {
-                nextCharsCollection.push(s.value);
-                currentCharsCollection.push(s.value);
-              }
-            });
-            next.value = nextCharsCollection.join('');
-            current.value = currentCharsCollection.join('');
-          }
-        } else if (current.removed && !current.both) {
-          diffInfo.total += 1;
-          if (next && next.added) {
-            current.both = true;
-            next.both = true;
-            charsDiff = jsdiff.diffChars(current.value, next.value);
-            let nextCharsCollection = [];
-            let currentCharsCollection = [];
-            charsDiff.forEach(s => {
-              if (s.added) {
-                nextCharsCollection.push(`<span class="char_highlight added">${s.value}</span>`);
-              } else if (s.removed) {
-                currentCharsCollection.push(`<span class="char_highlight removed">${s.value}</span>`);
-              } else if (!s.added && !s.removed) {
-                nextCharsCollection.push(s.value);
-                currentCharsCollection.push(s.value);
-              }
-            });
-            next.value = nextCharsCollection.join('');
-            current.value = currentCharsCollection.join('');
+            if (next && next.added) {
+              current.both = true;
+              next.both = true;
+              charsDiff = jsdiff.diffChars(current.value, next.value);
+              let nextCharsCollection = [];
+              let currentCharsCollection = [];
+              charsDiff.forEach(s => {
+                if (s.added) {
+                  nextCharsCollection.push(`<span class="char_highlight added">${s.value}</span>`);
+                } else if (s.removed) {
+                  currentCharsCollection.push(`<span class="char_highlight removed">${s.value}</span>`);
+                } else if (!s.added && !s.removed) {
+                  nextCharsCollection.push(s.value);
+                  currentCharsCollection.push(s.value);
+                }
+              });
+              next.value = nextCharsCollection.join('');
+              current.value = currentCharsCollection.join('');
+            }
           }
         }
+        // 将文件diff差异个数写入dirDiff中
+        const dirDiffFromMemory = await findDirDiffByBuildId(buildId);
+        if (dirDiffFromMemory) {
+          const dirDiffSet = JSON.parse(dirDiffFromMemory.diff);
+          dirDiffSet.forEach(item => {
+            if (item.fullname === (left || right)) {
+              item.fileDiffCount = diffInfo.total;
+            }
+          });
+          await changeDirDiffByBuildId(buildId, JSON.stringify(dirDiffSet));
+        }
+        await changeFileDiffByBuildId(buildId, left || right, JSON.stringify(diffSet), JSON.stringify(diffInfo));
+      } else {
+        diffSet = JSON.parse(fileDiffFromMemory.diff);
+        diffInfo = JSON.parse(fileDiffFromMemory.info);
       }
       ctx.body = {
         errCode: 0,
         errMsg: 'success',
         data: {
-          diffSet: diffResult,
+          diffSet,
           diffInfo
         }
       };
     } else {
-      const dirCompare = require('dir-compare');
-      const options = {
-        compareContent: true,
-        excludeFilter: '.git,node_modules,.DS_Store'
-      };
-      const compareResult = dirCompare.compareSync(lastBuildResultDir, onlineRepoDir, options);
-      const diffSet = compareResult.diffSet;
-      const lastBuildDirInfo = [];
-      const onlineRepoDirInfo = [];
-      function generateLastBuildDirInfo (infoArr, entry, different, pos) {
-        entry.fullname = entry.relativePath + '/' + entry[`name${different}`];
-        if (entry.level === 0) {
-          infoArr.push({
-            name: entry[`name${different}`],
-            type: entry[`type${different}`],
-            relative: entry.relativePath,
-            pos,
-            children: []
-          });
-        } else {
-          (function iterateThrough (arr, obj) {
-            arr.forEach((item) => {
-              if (item.type === 'directory') {
-                if (`${item.relative}/${item.name}` === obj.relativePath) {
-                  item.children.push({
-                    name: obj[`name${different}`],
-                    type: obj[`type${different}`],
-                    relative: obj.relativePath,
-                    pos,
-                    children: []
-                  });
-                } else {
-                  iterateThrough(item.children, obj);
-                }
-              }
+      const dirDiffFromMemory = await findDirDiffByBuildId(buildId);
+      let diffSet;
+      if (!dirDiffFromMemory) {
+        const dirCompare = require('dir-compare');
+        const options = {
+          compareContent: true,
+          excludeFilter: '.git,node_modules,.DS_Store'
+        };
+        const compareResult = dirCompare.compareSync(lastBuildResultDir, onlineRepoDir, options);
+        diffSet = compareResult.diffSet;
+        const lastBuildDirInfo = [];
+        const onlineRepoDirInfo = [];
+        function generateLastBuildDirInfo (infoArr, entry, different, pos) {
+          entry.fullname = entry.relativePath + '/' + entry[`name${different}`];
+          if (entry.level === 0) {
+            infoArr.push({
+              name: entry[`name${different}`],
+              type: entry[`type${different}`],
+              relative: entry.relativePath,
+              pos,
+              children: []
             });
-          })(infoArr, entry);
+          } else {
+            (function iterateThrough (arr, obj) {
+              arr.forEach((item) => {
+                if (item.type === 'directory') {
+                  if (`${item.relative}/${item.name}` === obj.relativePath) {
+                    item.children.push({
+                      name: obj[`name${different}`],
+                      type: obj[`type${different}`],
+                      relative: obj.relativePath,
+                      pos,
+                      children: []
+                    });
+                  } else {
+                    iterateThrough(item.children, obj);
+                  }
+                }
+              });
+            })(infoArr, entry);
+          }
         }
+        diffSet.forEach(entry => {
+          switch (entry.state) {
+            case 'left':  // 只有左边有
+              generateLastBuildDirInfo(lastBuildDirInfo, entry, '1', 'left');
+              break;
+            case 'right':
+              generateLastBuildDirInfo(onlineRepoDirInfo, entry, '2', 'right');
+              break;
+            case 'equal':
+              generateLastBuildDirInfo(lastBuildDirInfo, entry, '1', 'equal');
+              generateLastBuildDirInfo(onlineRepoDirInfo, entry, '2', 'equal');
+              break;
+            case 'distinct':
+              generateLastBuildDirInfo(lastBuildDirInfo, entry, '1', 'distinct');
+              generateLastBuildDirInfo(onlineRepoDirInfo, entry, '2', 'distinct');
+              break;
+          }
+        });
+        await changeDirDiffByBuildId(buildId, JSON.stringify(diffSet));
+      } else {
+        diffSet = JSON.parse(dirDiffFromMemory.diff);
       }
-      diffSet.forEach(entry => {
-        switch (entry.state) {
-          case 'left':  // 只有左边有
-            generateLastBuildDirInfo(lastBuildDirInfo, entry, '1', 'left');
-            break;
-          case 'right':
-            generateLastBuildDirInfo(onlineRepoDirInfo, entry, '2', 'right');
-            break;
-          case 'equal':
-            generateLastBuildDirInfo(lastBuildDirInfo, entry, '1', 'equal');
-            generateLastBuildDirInfo(onlineRepoDirInfo, entry, '2', 'equal');
-            break;
-          case 'distinct':
-            generateLastBuildDirInfo(lastBuildDirInfo, entry, '1', 'distinct');
-            generateLastBuildDirInfo(onlineRepoDirInfo, entry, '2', 'distinct');
-            break;
-        }
-      });
+      
       ctx.body = {
         errCode: 0,
         errMsg: 'success',
         data: {
-          left: lastBuildDirInfo,
-          right: onlineRepoDirInfo,
           diffSet: diffSet
         }
       };

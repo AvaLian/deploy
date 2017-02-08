@@ -199,6 +199,14 @@
         await this.getMark({
           buildId
         });
+        const currentBuildMark = this.codeMark[buildId];
+        if (currentBuildMark) {
+          this.dirDiffSet.forEach(item => {
+            if (currentBuildMark[item.fullname] && item.fileDiffCount === currentBuildMark[item.fullname].length) {
+              this.markDiffFile({ diffFile: item.fullname, type: 'add' });
+            }
+          });
+        }
         this.isDirDiffLoading = false;
       },
 
@@ -249,16 +257,6 @@
         await this.getDiff(params);
         this.isfileDiffLoading = false;
         this.currentDiffFile = fileName;
-        const buildId = this.buildRecord._id;
-        const currentBuildMark = this.codeMark[buildId];
-        if (currentBuildMark && currentBuildMark[fileName] && this.fileCodeDiffCount === currentBuildMark[fileName].length) {
-          this.markDiffFile({ diffFile: fileName, type: 'add' });
-          this.$message({
-            message: '恭喜，当前文件的所有差异都已标记完毕！',
-            type: 'success'
-          });
-          this.markedFileCount++;
-        }
         this.showFileDiff = true;
       },
 
