@@ -6,6 +6,7 @@ const GET_SOURCE_REPO_INFO = 'GET_SOURCE_REPO_INFO';
 const GET_ONLINE_REPO_INFO = 'GET_ONLINE_REPO_INFO';
 const PROJECT_BUILD_LOG = 'PROJECT_BUILD_LOG';
 const MODIFY_PROJECT_BUILD_STATUS = 'MODIFY_PROJECT_BUILD_STATUS';
+const MODIFY_PROJECT_BUILD_COUNT = 'MODIFY_PROJECT_BUILD_COUNT';
 
 const state = {
   project: {
@@ -27,6 +28,10 @@ const mutations = {
 
   [MODIFY_PROJECT_BUILD_STATUS] (state, { status }) {
     state.project.buildStatus = status;
+  },
+
+  [MODIFY_PROJECT_BUILD_COUNT] (state, { count }) {
+    state.project.buildCount = count;
   },
 
   [GET_SOURCE_REPO_INFO] (state, { sourceRepoInfo }) {
@@ -55,6 +60,10 @@ const actions = {
 
   modifyProjectBuildStatus ({ commit }, { status }) {
     commit(MODIFY_PROJECT_BUILD_STATUS, { status });
+  },
+
+  modifyProjectBuildCount ({ commit }, { count }) {
+    commit(MODIFY_PROJECT_BUILD_COUNT, { count });
   },
 
   async getProject ({ commit }, { id }) {

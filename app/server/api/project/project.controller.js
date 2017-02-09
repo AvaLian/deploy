@@ -193,7 +193,7 @@ export async function buildProjectById (ctx) {
     ctx.body = {
       errCode: 0,
       errMsg: 'success',
-      data: buildRecord
+      data: newBuild
     };
   } catch (err) {
     ctx.throw(422, err.message);

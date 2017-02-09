@@ -30,7 +30,8 @@
           </div>
         </div>
         <div class="project_log" v-show="!isSourceRepoInfoLoading">
-          <build-record :buildRecord="buildRecord"></build-record>
+          <build-record :buildRecord="buildRecord" v-show="!isBuilding"></build-record>
+          <div v-show="isBuilding">正在编译中...</div>
         </div>
       </el-tab-pane>
       <el-tab-pane label="上线仓库" name="onlineRepo">
@@ -142,6 +143,9 @@
         if (!fileName || isEmptyObject(this.codeMark)) {
           return [];
         }
+        if (!this.codeMark[buildId]) {
+          return [];
+        }
         const codeMark = this.codeMark[buildId][fileName];
         return codeMark;
       },
@@ -169,6 +173,7 @@
         'buildProject',
         'getBuildRecord',
         'modifyProjectBuildStatus',
+        'modifyProjectBuildCount',
         'getDiff',
         'initDiff',
         'initFileDiff',
@@ -184,6 +189,7 @@
         this.isBuilding = true;
         await this.buildProject({ id });
         this.isBuilding = false;
+        this.modifyProjectBuildCount({ count: this.project.buildCount + 1 });
         this.modifyProjectBuildStatus({ status: this.buildRecord.status });
       },
 
@@ -265,6 +271,7 @@
       },
 
       async onToggleMask (checked, lineNum) {
+        console.log(this.buildRecord);
         const buildId = this.buildRecord._id;
         const fileName = this.currentDiffFile;
         if (checked) {
@@ -336,6 +343,9 @@
           const buildId = this.buildRecord._id;
           const fileName = this.currentDiffFile;
           if (!fileName || isEmptyObject(codeMark)) {
+            return [];
+          }
+          if (!codeMark[buildId]) {
             return [];
           }
           const codeMark = codeMark[buildId][fileName];
