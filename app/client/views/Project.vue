@@ -70,6 +70,7 @@
   import DiffList from '../components/DiffList';
   import CodeShow from '../components/CodeShow';
   import router from '../router';
+  import { DOMAIN } from '../config';
 
   export default {
     data () {
@@ -109,7 +110,13 @@
         const diffSet = this.fileDiff.diffSet;
         let res = [];
         diffSet.forEach(item => {
-          let value = item.value.split('\n');
+          let value = item.value;
+          if (item.type === 'image') {
+            value = `<img src="${DOMAIN}${value}" />`;
+          } else if (item.type === 'media') {
+            value = `<a href="${DOMAIN}${value}"></a>`;
+          }
+          value = value.split('\n');
           if (!item.removed && item.added) {
             res = res.concat(value.map(s => ({code: s, different: true, type: 'added'})).filter(i => i.code));
           } else if (!item.removed && !item.added) {
@@ -125,7 +132,13 @@
         const diffSet = this.fileDiff.diffSet;
         let res = [];
         diffSet.forEach(item => {
-          let value = item.value.split('\n');
+          let value = item.value;
+          if (item.type === 'image') {
+            value = `<img src="${DOMAIN}${value}" />`;
+          } else if (item.type === 'media') {
+            value = `<a href="${DOMAIN}${value}"></a>`;
+          }
+          value = value.split('\n');
           if (item.removed && !item.added) {
             res = res.concat(value.map(s => ({code: s, different: true, type: 'removed'})).filter(i => i.code));
           } else if (!item.removed && !item.added) {
@@ -151,6 +164,9 @@
       },
 
       fileCodeDiffCount () {
+        if (!this.fileDiff) {
+          return 0;
+        }
         const diffInfo = this.fileDiff.diffInfo;
         if (diffInfo) {
           return diffInfo.total;
@@ -258,7 +274,7 @@
         if (item.state === 'equal' || item.state === 'distinct') {
           params.left = params.right = fileName;
         } else {
-          params[item.state] = ifileName;
+          params[item.state] = fileName;
         }
         await this.getDiff(params);
         this.isfileDiffLoading = false;

@@ -10,6 +10,7 @@ import { addBuildRecord } from '../build/build.controller.js';
 import { findDirDiffByBuildId, changeDirDiffByBuildId } from '../dirDiff/dirDiff.controller.js';
 import { findFileDiffByBuildId, changeFileDiffByBuildId } from '../fileDiff/fileDiff.controller.js';
 import config from '../../config';
+import { regexps, transform2DataURI, checksum } from '../../utils';
 
 async function getNewestRepo (repo, repoPath) {
   let res = 0; // 0 表示拉取成功
@@ -200,6 +201,28 @@ export async function buildProjectById (ctx) {
   }
 }
 
+function getFileInfo (fileName, filePath) {
+  let fileContent = '';
+  let fileInfo = {};
+  if (fileName && fse.existsSync(filePath) && fse.statSync(filePath).isFile()) { // 編譯后的文件中有此文件
+    let fileType = path.extname(filePath).replace(/^\./, '');
+    if (regexps.images.test(fileType)) { // 是图片
+      fileContent = checksum(fse.readFileSync(filePath), 16);
+      fileInfo.type = 'image';
+    } else if (regexps.media.test(fileType)) { // 是其他多媒体文件
+      fileContent = checksum(fse.readFileSync(filePath), 16);
+      fileInfo.type = 'media';
+    } else {
+      const beautifyOptions = { indent_size: 2 };
+      fileContent = getBeautifyMethod(fileType)(String(fse.readFileSync(filePath)), beautifyOptions);
+      fileContent = hljs.highlight(fileType, fileContent, true).value;
+      fileInfo.type = 'normal';
+    }
+  }
+  fileInfo.content = fileContent;
+  return fileInfo;
+}
+
 export async function getOnlineDiff (ctx) {
   const id = ctx.params.id;
   const query = ctx.query;
@@ -225,87 +248,114 @@ export async function getOnlineDiff (ctx) {
     if ('left' in query || 'right' in query) {
       const left = query.left || ''; // 左側文件
       const right = query.right || ''; // 右側文件
+      const compareFile = left || right || '';
       const fileDiffFromMemory = await findFileDiffByBuildId(buildId, left || right);
       let diffInfo = {
         total: 0
       };
-      let diffSet = {};
+      let diffSet = [];
       if (!fileDiffFromMemory) {
         const leftFilePath = path.join(lastBuildResultDir, left);
         const rightFilePath = path.join(onlineRepoDir, right);
-        let leftFileContent = '';
-        let rightFileContent = '';
-        const beautifyOptions = { indent_size: 2 };
-        if (left && fse.existsSync(leftFilePath) && fse.statSync(leftFilePath).isFile()) { // 編譯后的文件中有此文件
-          let fileType = path.extname(leftFilePath).replace(/^\./, '');
-          leftFileContent = getBeautifyMethod(fileType)(String(fse.readFileSync(leftFilePath)), beautifyOptions);
-          leftFileContent = hljs.highlight(fileType, leftFileContent, true).value;
-        }
-        if (right && fse.existsSync(rightFilePath) && fse.statSync(rightFilePath).isFile()) { // 基線版本中沒有此文件
-          let fileType = path.extname(rightFilePath).replace(/^\./, '');
-          rightFileContent = getBeautifyMethod(fileType)(String(fse.readFileSync(rightFilePath)), beautifyOptions);
-          rightFileContent = hljs.highlight(fileType, rightFileContent, true).value;
-        }
-        
-        if (leftFileContent.length === 0 && rightFileContent === 0) {
+        const leftFileInfo = getFileInfo(left, leftFilePath);
+        const rightFileInfo = getFileInfo(right, rightFilePath);
+        const leftFileContent = leftFileInfo.content;
+        const rightFileContent = rightFileInfo.content;
+        if (leftFileContent.length === 0 && rightFileContent.length === 0) {
           ctx.body = {
             errCode: 101,
             errMsg: '傳入的文件地址有誤，請檢查！'
           };
           return;
         }
-        const jsdiff = require('diff');
-        diffSet = jsdiff.diffLines(rightFileContent, leftFileContent);
-        // 处理一下diff结果
-        for (let i = 0; i < diffSet.length; i++) {
-          const current = diffSet[i];
-          const next = diffSet[i + 1];
-          const prev = diffSet[i - 1];
-          let charsDiff;
-          if (current.added && !current.both) {
-            if (!prev || !prev.removed) {
+        // 比较普通文件
+        if (leftFileInfo.type === 'normal' || rightFileInfo.type === 'normal') {
+          const jsdiff = require('diff');
+          diffSet = jsdiff.diffLines(rightFileContent, leftFileContent);
+          // 处理一下diff结果
+          for (let i = 0; i < diffSet.length; i++) {
+            const current = diffSet[i];
+            const next = diffSet[i + 1];
+            const prev = diffSet[i - 1];
+            let charsDiff;
+            if (current.added && !current.both) {
+              if (!prev || !prev.removed) {
+                diffInfo.total += 1;
+              }
+              if (next && next.removed) {
+                current.both = true;
+                next.both = true;
+                charsDiff = jsdiff.diffChars(next.value, current.value);
+                let nextCharsCollection = [];
+                let currentCharsCollection = [];
+                charsDiff.forEach(s => {
+                  if (s.added) {
+                    currentCharsCollection.push(`<span class="char_highlight added">${s.value}</span>`);
+                  } else if (s.removed) {
+                    nextCharsCollection.push(`<span class="char_highlight removed">${s.value}</span>`);
+                  } else if (!s.added && !s.removed) {
+                    nextCharsCollection.push(s.value);
+                    currentCharsCollection.push(s.value);
+                  }
+                });
+                next.value = nextCharsCollection.join('');
+                current.value = currentCharsCollection.join('');
+              }
+            } else if (current.removed && !current.both) {
               diffInfo.total += 1;
+              if (next && next.added) {
+                current.both = true;
+                next.both = true;
+                charsDiff = jsdiff.diffChars(current.value, next.value);
+                let nextCharsCollection = [];
+                let currentCharsCollection = [];
+                charsDiff.forEach(s => {
+                  if (s.added) {
+                    nextCharsCollection.push(`<span class="char_highlight added">${s.value}</span>`);
+                  } else if (s.removed) {
+                    currentCharsCollection.push(`<span class="char_highlight removed">${s.value}</span>`);
+                  } else if (!s.added && !s.removed) {
+                    nextCharsCollection.push(s.value);
+                    currentCharsCollection.push(s.value);
+                  }
+                });
+                next.value = nextCharsCollection.join('');
+                current.value = currentCharsCollection.join('');
+              }
             }
-            if (next && next.removed) {
-              current.both = true;
-              next.both = true;
-              charsDiff = jsdiff.diffChars(next.value, current.value);
-              let nextCharsCollection = [];
-              let currentCharsCollection = [];
-              charsDiff.forEach(s => {
-                if (s.added) {
-                  currentCharsCollection.push(`<span class="char_highlight added">${s.value}</span>`);
-                } else if (s.removed) {
-                  nextCharsCollection.push(`<span class="char_highlight removed">${s.value}</span>`);
-                } else if (!s.added && !s.removed) {
-                  nextCharsCollection.push(s.value);
-                  currentCharsCollection.push(s.value);
-                }
-              });
-              next.value = nextCharsCollection.join('');
-              current.value = currentCharsCollection.join('');
-            }
-          } else if (current.removed && !current.both) {
-            diffInfo.total += 1;
-            if (next && next.added) {
-              current.both = true;
-              next.both = true;
-              charsDiff = jsdiff.diffChars(current.value, next.value);
-              let nextCharsCollection = [];
-              let currentCharsCollection = [];
-              charsDiff.forEach(s => {
-                if (s.added) {
-                  nextCharsCollection.push(`<span class="char_highlight added">${s.value}</span>`);
-                } else if (s.removed) {
-                  currentCharsCollection.push(`<span class="char_highlight removed">${s.value}</span>`);
-                } else if (!s.added && !s.removed) {
-                  nextCharsCollection.push(s.value);
-                  currentCharsCollection.push(s.value);
-                }
-              });
-              next.value = nextCharsCollection.join('');
-              current.value = currentCharsCollection.join('');
-            }
+          }
+        } else {
+          const leftLength = leftFileContent.length;
+          const rightLength = rightFileContent.length;
+          let diffRet1 = {
+            value: `${config.projectBuildStatic}/${id}/${path.join(`${id}_source`, '.temp', appConf.app, left)}`,
+            count: 1
+          };
+          let diffRet2 = {
+            value: `${config.projectBuildStatic}/${id}/${path.join(`${id}_online`, right)}`,
+            count: 1
+          };
+          if (leftLength === 0) {
+            diffRet2.removed = true;
+            diffRet2.type = rightFileInfo.type;
+            diffSet.push(diffRet2);
+            diffInfo.total = 1;
+          } else if (rightLength === 0) {
+            diffRet1.added = true;
+            diffRet1.type = leftFileInfo.type;
+            diffSet.push(diffRet1);
+            diffInfo.total = 1;
+          } else if (leftFileContent !== rightFileContent) {
+            diffRet1.added = true;
+            diffRet2.removed = true;
+            diffRet1.type = leftFileInfo.type;
+            diffRet2.type = rightFileInfo.type;
+            diffSet.push(diffRet1);
+            diffSet.push(diffRet2);
+            diffInfo.total = 1;
+          } else if (leftFileContent === rightFileContent) {
+            diffRet1.type = leftFileInfo.type;
+            diffSet.push(diffRet1);
           }
         }
         // 将文件diff差异个数写入dirDiff中
