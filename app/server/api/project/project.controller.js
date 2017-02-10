@@ -204,7 +204,9 @@ export async function buildProjectById (ctx) {
 function getFileInfo (fileName, filePath) {
   let fileContent = '';
   let fileInfo = {};
+  fileInfo.exists = false;
   if (fileName && fse.existsSync(filePath) && fse.statSync(filePath).isFile()) { // 編譯后的文件中有此文件
+    fileInfo.exists = true;
     let fileType = path.extname(filePath).replace(/^\./, '');
     if (regexps.images.test(fileType)) { // 是图片
       fileContent = checksum(fse.readFileSync(filePath), 16);
@@ -261,7 +263,7 @@ export async function getOnlineDiff (ctx) {
         const rightFileInfo = getFileInfo(right, rightFilePath);
         const leftFileContent = leftFileInfo.content;
         const rightFileContent = rightFileInfo.content;
-        if (leftFileContent.length === 0 && rightFileContent.length === 0) {
+        if (!leftFileInfo.exists && !rightFileInfo.exists) {
           ctx.body = {
             errCode: 101,
             errMsg: '傳入的文件地址有誤，請檢查！'
