@@ -26,7 +26,7 @@
           </div>
           <div class="project_operate">
             <p v-if="project.buildStatus === 1"><el-button class="project_diffbtn" type="primary" @click="projectDiff" :loading="isBuilding">代码diff</el-button></p>
-            <p v-if="project.buildStatus === 1 && canDoOnline"><el-button class="project_onlinebtn" type="primary" @click="projectOnline" :loading="isBuilding">上线</el-button></p>
+            <p v-if="project.buildStatus === 1 && canDoDeploy"><el-button class="project_onlinebtn" type="primary" @click="projectDeploy">上线</el-button></p>
           </div>
         </div>
         <div class="project_log" v-show="!isSourceRepoInfoLoading">
@@ -35,11 +35,14 @@
         </div>
       </el-tab-pane>
       <el-tab-pane label="上线仓库" name="onlineRepo">
-        上线
+        
       </el-tab-pane>
     </el-tabs>
     <el-dialog class="diff_dialog" title="代码diff" v-model="showDirDiffDialog" size="full">
       <div v-loading="isDirDiffLoading" class="diff_container">
+        <div class="diff_deploy" v-if="project.buildStatus === 1 && canDoDeploy">
+          <el-button class="diff_deploy_btn" type="primary" @click="goToDeploy">上线</el-button>
+        </div>
         <div class="diff_files">
           <h3 class="diff_title">影响到的文件</h3>
           <diff-list :diffSet="dirDiffSet" @fileClick="onFileClick" @renderEnd="onDiffListRenderEnd"></diff-list>
@@ -59,6 +62,18 @@
         </div>
       </div>
     </el-dialog>
+    <el-dialog class="deploy_dialog" title="项目上线" v-model="showDeployDialog">
+      <div class="deploy_container">
+        <div class="deploy_files">
+          <h3 class="deploy_title">选择上线文件</h3>
+          <FileList :files="preOnlineFiles" @toggleFileChoose="onToggleFileChoose"></FileList>
+        </div>
+        <span slot="footer" class="dialog-footer">
+          <el-button @click="showDeployDialog = false">取 消</el-button>
+          <el-button class="deploy_confirm" type="primary" @click="doDeploy">确定</el-button>
+        </span>
+      </div>
+    </el-dialog>
   </section>
 </template>
 <script>
@@ -69,6 +84,7 @@
   import BuildRecord from '../components/BuildRecord';
   import DiffList from '../components/DiffList';
   import CodeShow from '../components/CodeShow';
+  import FileList from '../components/FileList';
   import router from '../router';
   import { DOMAIN } from '../config';
 
@@ -85,14 +101,18 @@
         currentDiffFile: '',
         needDiffFileCount: 0,
         markedFileCount: 0,
-        canDoOnline: false
+        canDoDeploy: false,
+        showDeployDialog: false,
+        preOnlineFiles: [],
+        choosedOnlineFiles: []
       }
     },
 
     components: {
       BuildRecord,
       DiffList,
-      CodeShow
+      CodeShow,
+      FileList
     },
 
     computed: {
@@ -223,17 +243,38 @@
         });
         const currentBuildMark = this.codeMark[buildId];
         if (currentBuildMark) {
+          let markedFileCount = 0;
           this.dirDiffSet.forEach(item => {
             if (currentBuildMark[item.fullname] && item.fileDiffCount === currentBuildMark[item.fullname].length) {
               this.markDiffFile({ diffFile: item.fullname, type: 'add' });
+              markedFileCount++;
             }
           });
+          this.markedFileCount = markedFileCount;
+          if (this.markedFileCount >= this.needDiffFileCount) {
+            this.canDoDeploy = true;
+            this.$confirm('所有差异文件均已标记完毕，可以开始上线！', '提示', {
+              confirmButtonText: '确定',
+              cancelButtonText: '取消',
+              type: 'success'
+            }).then(() => {
+              this.goToDeploy();
+            });
+          }
         }
         this.isDirDiffLoading = false;
       },
 
-      async projectOnline () {
+      async projectDeploy () {
+        this.showDeployDialog = true;
+      },
 
+      goToDeploy () {
+        this.showDirDiffDialog = false;
+      },
+
+      onToggleFileChoose (files) {
+        this.choosedOnlineFiles = files;
       },
 
       async fetchData () {
@@ -282,12 +323,16 @@
         this.showFileDiff = true;
       },
 
-      onDiffListRenderEnd (listCount) {
-        this.needDiffFileCount = listCount;
+      onDiffListRenderEnd (diffList) {
+        this.preOnlineFiles = diffList;
+        this.needDiffFileCount = diffList.length;
+      },
+
+      doDeploy () {
+        
       },
 
       async onToggleMask (checked, lineNum) {
-        console.log(this.buildRecord);
         const buildId = this.buildRecord._id;
         const fileName = this.currentDiffFile;
         if (checked) {
@@ -303,14 +348,14 @@
               type: 'success'
             });
             this.markedFileCount++;
-            if (this.markedFileCount > 0 && this.markedFileCount === this.needDiffFileCount) {
+            if (this.markedFileCount > 0 && this.markedFileCount >= this.needDiffFileCount) {
               this.$confirm('所有差异文件均已标记完毕，可以开始上线！', '提示', {
                 confirmButtonText: '确定',
                 cancelButtonText: '取消',
                 type: 'success'
               }).then(() => {
                 this.showDirDiffDialog = false;
-                this.canDoOnline = true;
+                this.canDoDeploy = true;
               });
             }
           }
@@ -460,11 +505,11 @@
   .diff_right {
     border-left: 1px solid #ddd;
   }
-  .diff_files,.diff_single {
+  .diff_files,.diff_single,.deploy_files {
     border: 1px solid #ddd;
     margin-bottom: 15px;
   }
-  .diff_title {
+  .diff_title,.deploy_title {
     padding: 8px 12px;
     background-color: #E5E9F2;
     color: #222;
@@ -486,5 +531,8 @@
     color: #FF4949;
     font-style: normal;
     font-size: 16px;
+  }
+  .diff_deploy {
+    margin-bottom: 12px;
   }
 </style>

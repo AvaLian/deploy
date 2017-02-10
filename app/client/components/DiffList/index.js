@@ -49,6 +49,7 @@ export default {
   
   render (h) {
     const diffSet = this.diffSet || [];
+    const filteredList = [];
     const diffList = diffSet.map((entry, i) => {
       if (this.dirs.indexOf(entry.fullname) < 0 && (entry.type1 === 'directory' || entry.type2 === 'directory')) {
         if (entry.level <= 1) {
@@ -71,6 +72,7 @@ export default {
         });
         let mark = entry.marked ? <span class="file_diff_mark">通过</span> : '';
         if (showItem) {
+          filteredList.push(entry);
           return (
             <li class={{ file_diff_item: true, active: this.activeIndex === i }}><a href="javascript:;" onClick={this.onFileClick.bind(this, entry, i)}>{txt}</a>{mark}</li>
           );
@@ -83,7 +85,7 @@ export default {
         <a href="javascript:;" class={{ file_diff_extra_lk: true, active: this.extraDirs.indexOf(dir) >= 0 }} onClick={this.toggleExtra.bind(this, dir)}>{dir}</a>
       );
     });
-    this.$emit('renderEnd', diffList.length);
+    this.$emit('renderEnd', filteredList.slice(0));
     return (
       <div class="file_diff">
         <div class="file_diff_extra">
