@@ -13,27 +13,26 @@ const state = {
 
 const mutations = {
   [GET_MARK] (state, { buildId, buildMark }) {
-    state.mark[buildId] = buildMark;
+    Vue.set(state.mark, buildId, buildMark);
   },
 
   [ADD_MARK] (state, { buildId, fileName, lineNum }) {
-    let mark = Object.assign({}, state.mark);
-    if (!mark[buildId]) {
-      mark[buildId] = {};
+    if (!state.mark[buildId]) {
+      Vue.set(state.mark, buildId, {});
     }
-    let fileInfo = mark[buildId][fileName];
+    let fileInfo = state.mark[buildId][fileName];
     if (!fileInfo) {
-      fileInfo = mark[buildId][fileName] = [];
+      Vue.set(state.mark[buildId], fileName, []);
+      fileInfo = state.mark[buildId][fileName];
     }
     if (fileInfo.indexOf(lineNum) < 0) {
       fileInfo.push(lineNum);
     }
-    state.mark = mark;
   },
   
   [REMOVE_MARK] (state, { buildId, fileName, lineNum }) {
     if (!state.mark[buildId]) {
-      state.mark[buildId] = {};
+      Vue.set(state.mark, buildId, {});
     }
     let fileInfo = state.mark[buildId][fileName];
     if (fileInfo) {

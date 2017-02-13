@@ -129,58 +129,61 @@
       leftFileCode () {
         const diffSet = this.fileDiff.diffSet;
         let res = [];
-        diffSet.forEach(item => {
-          let value = item.value;
-          if (item.type === 'image') {
-            value = `<img src="${DOMAIN}${value}" />`;
-          } else if (item.type === 'media') {
-            value = `<a href="${DOMAIN}${value}"></a>`;
-          }
-          value = value.split('\n');
-          if (!item.removed && item.added) {
-            res = res.concat(value.map(s => ({code: s, different: true, type: 'added'})).filter(i => i.code));
-          } else if (!item.removed && !item.added) {
-            res = res.concat(value.map(s => ({code: s, different: false})).filter(i => i.code));
-          } else if (item.removed && !item.added && !item.both) {
-            res = res.concat(value.map(s => {if (s && s.length) {return {code: '', different: true, type: 'added'}}}).filter(i => i));
-          }
-        });
+        if (diffSet.length === 1 && diffSet[0].count === 0 && diffSet[0].value === '') {
+          res = [{code: '', different: true}];
+        } else {
+          diffSet.forEach(item => {
+            let value = item.value;
+            if (item.type === 'image') {
+              value = `<img src="${DOMAIN}${value}" />`;
+            } else if (item.type === 'media') {
+              value = `<a href="${DOMAIN}${value}"></a>`;
+            }
+            value = value.split('\n');
+            if (!item.removed && item.added) {
+              res = res.concat(value.map(s => ({code: s, different: true, type: 'added'})).filter(i => i.code));
+            } else if (!item.removed && !item.added) {
+              res = res.concat(value.map(s => ({code: s, different: false})).filter(i => i.code));
+            } else if (item.removed && !item.added && !item.both) {
+              res = res.concat(value.map(s => {if (s && s.length) {return {code: '', different: true, type: 'added'}}}).filter(i => i));
+            }
+          });
+        }
         return res;
       },
 
       rightFileCode () {
         const diffSet = this.fileDiff.diffSet;
         let res = [];
-        diffSet.forEach(item => {
-          let value = item.value;
-          if (item.type === 'image') {
-            value = `<img src="${DOMAIN}${value}" />`;
-          } else if (item.type === 'media') {
-            value = `<a href="${DOMAIN}${value}"></a>`;
-          }
-          value = value.split('\n');
-          if (item.removed && !item.added) {
-            res = res.concat(value.map(s => ({code: s, different: true, type: 'removed'})).filter(i => i.code));
-          } else if (!item.removed && !item.added) {
-            res = res.concat(value.map(s => ({code: s, different: false})).filter(i => i.code));
-          } else if (!item.removed && item.added && !item.both) {
-            res = res.concat(value.map(s => {if (s && s.length) {return {code: '', different: true, type: 'removed'}}}).filter(i => i));
-          }
-        });
+        if (diffSet.length === 1 && diffSet[0].count === 0 && diffSet[0].value === '') {
+          res = [{code: '', different: true}];
+        } else {
+          diffSet.forEach(item => {
+            let value = item.value;
+            if (item.type === 'image') {
+              value = `<img src="${DOMAIN}${value}" />`;
+            } else if (item.type === 'media') {
+              value = `<a href="${DOMAIN}${value}"></a>`;
+            }
+            value = value.split('\n');
+            if (item.removed && !item.added) {
+              res = res.concat(value.map(s => ({code: s, different: true, type: 'removed'})).filter(i => i.code));
+            } else if (!item.removed && !item.added) {
+              res = res.concat(value.map(s => ({code: s, different: false})).filter(i => i.code));
+            } else if (!item.removed && item.added && !item.both) {
+              res = res.concat(value.map(s => {if (s && s.length) {return {code: '', different: true, type: 'removed'}}}).filter(i => i));
+            }
+          });
+        }
         return res;
       },
 
       getCodeMark () {
         const buildId = this.buildRecord._id;
         const fileName = this.currentDiffFile;
-        if (!fileName || isEmptyObject(this.codeMark)) {
-          return [];
+        if (fileName && this.codeMark[buildId]) {
+          return this.codeMark[buildId][fileName];
         }
-        if (!this.codeMark[buildId]) {
-          return [];
-        }
-        const codeMark = this.codeMark[buildId][fileName];
-        return codeMark;
       },
 
       fileCodeDiffCount () {
@@ -245,8 +248,9 @@
         if (currentBuildMark) {
           let markedFileCount = 0;
           this.dirDiffSet.forEach(item => {
-            if (currentBuildMark[item.fullname] && item.fileDiffCount === currentBuildMark[item.fullname].length) {
-              this.markDiffFile({ diffFile: item.fullname, type: 'add' });
+            let fullname = item.fullname;
+            if (currentBuildMark[fullname] && currentBuildMark[fullname].length && (item.fileDiffCount === currentBuildMark[fullname].length || item.fileDiffCount === 0)) {
+              this.markDiffFile({ diffFile: fullname, type: 'add' });
               markedFileCount++;
             }
           });
@@ -257,9 +261,7 @@
               confirmButtonText: '确定',
               cancelButtonText: '取消',
               type: 'success'
-            }).then(() => {
-              this.goToDeploy();
-            });
+            }).then(this.goToDeploy);
           }
         }
         this.isDirDiffLoading = false;
@@ -365,7 +367,7 @@
             fileName,
             lineNum
           });
-          if (this.getCodeMark.length < this.fileCodeDiffCount) {
+          if (this.getCodeMark.length < this.fileCodeDiffCount || this.fileCodeDiffCount === 0) {
             this.markDiffFile({ diffFile: fileName, type: 'remove' });
             this.markedFileCount--;
           }
@@ -414,20 +416,6 @@
           // 拉取上一次编译log
           const id = this.$route.params.id;
           this.getBuildRecord({ id });
-        }
-      },
-      codeMark (codeMark) {
-        if (!codeMark) {
-          const buildId = this.buildRecord._id;
-          const fileName = this.currentDiffFile;
-          if (!fileName || isEmptyObject(codeMark)) {
-            return [];
-          }
-          if (!codeMark[buildId]) {
-            return [];
-          }
-          const codeMark = codeMark[buildId][fileName];
-          this.getCodeMark = codeMark;
         }
       }
     }
