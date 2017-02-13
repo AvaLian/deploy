@@ -329,7 +329,7 @@
       },
 
       doDeploy () {
-        
+
       },
 
       async onToggleMask (checked, lineNum) {
@@ -370,6 +370,22 @@
             this.markedFileCount--;
           }
         }
+      },
+
+      initData () {
+        this.isBuilding = false;
+        this.isSourceRepoInfoLoading = true;
+        this.isDirDiffLoading = false;
+        this.showDirDiffDialog = false;
+        this.showFileDiff = false;
+        this.isfileDiffLoading = false;
+        this.currentDiffFile = '';
+        this.needDiffFileCount = 0;
+        this.markedFileCount = 0;
+        this.canDoDeploy = false;
+        this.showDeployDialog = false;
+        this.preOnlineFiles = [];
+        this.choosedOnlineFiles = [];
       }
     },
 
@@ -382,6 +398,7 @@
         const tabName = val.query.tab;
         const oldTabName = oldVal.query.tab;
         if (val.path !== oldVal.path) {
+          this.initData();
           this.initProject();
           this.initProjectRepoInfo();
           this.fetchData();
