@@ -342,11 +342,16 @@
         this.idDeploying = false;
         if (this.deployInfo[projectId]) {
           this.showDeployDialog = false;
-          this.$message({
-            message: '恭喜，所有改动文件已经发布到上线池中，可以进行上线了！',
+          this.$confirm('恭喜，所有改动文件已经发布到上线池中，可以进行上线了！', '提示', {
+            confirmButtonText: '前往j-one',
+            cancelButtonText: '取消',
             type: 'success'
-          });
+          }).then(this.goToJone);
         }
+      },
+
+      goToJone () {
+        window.open('//j-one.jd.com', '_blank');
       },
 
       async onToggleMask (checked, lineNum) {
