@@ -56,7 +56,7 @@ const actions = {
   },
 
   async addMark ({ commit, state }, { buildId, fileName, lineNum }) {
-    let mark = Object.assign({}, state.mark);
+    let mark = JSON.parse(JSON.stringify(state.mark));
     if (!mark[buildId]) {
       mark[buildId] = {};
     }
@@ -76,7 +76,7 @@ const actions = {
   },
 
   async removeMark ({ commit, state }, { buildId, fileName, lineNum }) {
-    let mark = Object.assign({}, state.mark);
+    let mark = JSON.parse(JSON.stringify(state.mark));
     if (!mark[buildId]) {
       mark[buildId] = {};
     }
