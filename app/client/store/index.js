@@ -6,6 +6,7 @@ import projects from './modules/projects';
 import project from './modules/project';
 import diff from './modules/diff';
 import codeMark from './modules/code_mark';
+import deploy from './modules/deploy';
 
 Vue.use(Vuex);
 
@@ -16,7 +17,8 @@ export default new Vuex.Store({
     projects,
     project,
     diff,
-    codeMark
+    codeMark,
+    deploy
   },
   strict: debug,
   plugins: debug ? [createLogger()] : []

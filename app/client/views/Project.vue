@@ -70,7 +70,7 @@
         </div>
         <span slot="footer" class="dialog-footer">
           <el-button @click="showDeployDialog = false">取 消</el-button>
-          <el-button class="deploy_confirm" type="primary" @click="doDeploy">确定</el-button>
+          <el-button class="deploy_confirm" type="primary" @click="doDeploy" :loading="idDeploying">确定</el-button>
         </span>
       </div>
     </el-dialog>
@@ -104,7 +104,8 @@
         canDoDeploy: false,
         showDeployDialog: false,
         preOnlineFiles: [],
-        choosedOnlineFiles: []
+        choosedOnlineFiles: [],
+        idDeploying: false
       }
     },
 
@@ -123,7 +124,8 @@
         'buildRecord',
         'dirDiff',
         'fileDiff',
-        'codeMark'
+        'codeMark',
+        'deployInfo'
       ]),
 
       leftFileCode () {
@@ -219,7 +221,8 @@
         'markDiffFile',
         'getMark',
         'addMark',
-        'removeMark'
+        'removeMark',
+        'deploy'
       ]),
 
       async buildProjectById () {
@@ -330,8 +333,20 @@
         this.needDiffFileCount = diffList.length;
       },
 
-      doDeploy () {
-
+      async doDeploy () {
+        const projectId = this.project._id;
+        const buildId = this.buildRecord._id;
+        const files = this.choosedOnlineFiles;
+        this.idDeploying = true;
+        await this.deploy({ projectId, buildId, files });
+        this.idDeploying = false;
+        if (this.deployInfo[projectId]) {
+          this.showDeployDialog = false;
+          this.$message({
+            message: '恭喜，所有改动文件已经发布到上线池中，可以进行上线了！',
+            type: 'success'
+          });
+        }
       },
 
       async onToggleMask (checked, lineNum) {
