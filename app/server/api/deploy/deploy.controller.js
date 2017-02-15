@@ -19,7 +19,7 @@ export async function getDeplyInfoById (ctx) {
 export async function getDeplyInfoByProjectId (ctx) {
   try {
     const pid = ctx.params.id;
-    const deploys = await Deploy.find({ project: pid });
+    const deploys = await Deploy.find({ project: pid }).populate('build').sort({ time: 'desc' });
     ctx.body = { errCode: 0, errMsg: 'success', data: deploys };
   } catch (err) {
     ctx.throw(422, err.message);
@@ -43,17 +43,17 @@ export async function addDeployInfoByProjectId (ctx) {
   try {
     // 将文件拷贝到上线池中
     const deployFiles = files.map(item => {
-      const filePath = path.join(lastBuildResultDir, item);
-      const onlineFilePath = path.join(onlineRepoDir, item);
+      const filePath = path.join(lastBuildResultDir, item.fullname);
+      const onlineFilePath = path.join(onlineRepoDir, item.fullname);
       if (fse.existsSync(filePath)) {
-        fse.copySync(filePath, path.join(onlineRepoDir, item));
+        fse.copySync(filePath, path.join(onlineRepoDir, item.fullname));
         return onlineFilePath;
       }
     }).filter(item => item);
     let res = 0;
     // 源码池最新提交
-    const log = await new Promise((resolve, reject) => {
-      simpleGit(sourceRepo).log(function (err, log) {
+    const sourceLog = await new Promise((resolve, reject) => {
+      simpleGit(sourceRepo).log((err, log) => {
         if (err) {
           return reject(err);
         }
@@ -61,36 +61,43 @@ export async function addDeployInfoByProjectId (ctx) {
       });
     }).catch(err => console.log(err));
     let lastCommit = {};
-    if (log) {
-      const latest = log.latest;
+    let message = '[Commit from deploy-manage]';
+    if (sourceLog && sourceLog.latest) {
+      const latest = sourceLog.latest;
       lastCommit.message = latest.message;
       lastCommit.author = latest.author_name;
       lastCommit.date = latest.date;
       lastCommit.hash = latest.hash;
+      message = `[Commit from deploy-manage]${lastCommit.message}`;
     }
     // 提交上线池，并打上tag
-    await new Promise((resolve, reject) => {
+    const deployLog = await new Promise((resolve, reject) => {
       simpleGit(onlineRepoDir).add(deployFiles, err => {
         if (err) {
           res = 1;
           return reject(err);
         }
-        resolve();
-      }).commit(`[Commit from deploy-manage]${lastCommit.message}`, err => {
+      }).commit(message, err => {
         if (err) {
           res = 1;
           return reject(err);
         }
-        resolve();
       }).push('origin', 'master', err => {
         if (err) {
           res = 1;
           return reject(err);
         }
-        resolve();
+      }).log((err, log) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve(log);
       });
     }).catch(err => console.log(err));
-
+    let commitId = '';
+    if (deployLog && deployLog.latest) {
+      commitId = deployLog.latest.hash;
+    }
     if (res !== 0) {
       ctx.body = { errCode: 2, errMsg: '内部出错，请重试！' };
       return;
@@ -101,6 +108,8 @@ export async function addDeployInfoByProjectId (ctx) {
       project: pid,
       operator: '',
       time: new Date(),
+      commitId,
+      message,
       files: deployFiles
     });
     deploy.save();

@@ -21,7 +21,6 @@ async function getNewestRepo (repo, repoPath) {
           res = 1; // 失败
           return reject(err);
         }
-        resolve();
       }).reset(['--hard', 'origin/master'], err => {
         if (err) {
           res = 1; // 失败
@@ -40,9 +39,7 @@ async function getNewestRepo (repo, repoPath) {
         }
         resolve();
       });
-    }).catch(function (err) {
-      console.log(err);
-    });
+    }).catch((err) => console.log(err));
   }
   return res;
 }
@@ -112,7 +109,7 @@ export async function getSourceRepoInfoById (ctx) {
       return;
     }
     const log = await new Promise((resolve, reject) => {
-      simpleGit(sourceRepoPath).log(function (err, log) {
+      simpleGit(sourceRepoPath).log((err, log) => {
         if (err) {
           return reject(err);
         }

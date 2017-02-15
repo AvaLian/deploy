@@ -1,7 +1,7 @@
 <template>
   <div class="file_list">
     <el-checkbox-group v-model="myFiles" @change="toggleFileChoose">
-      <p v-for="file in files" class="file_list_item"><el-checkbox :label="file.fullname">{{file.fullname}}</el-checkbox></p>
+      <p v-for="file in files" class="file_list_item"><el-checkbox :label="file">{{file.fullname}}</el-checkbox></p>
     </el-checkbox-group>
   </div>
 </template>

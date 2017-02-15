@@ -72,7 +72,10 @@ export default {
         });
         let mark = entry.marked ? <span class="file_diff_mark">通过</span> : '';
         if (showItem) {
-          filteredList.push(entry);
+          filteredList.push({
+            state: entry.state,
+            fullname: entry.fullname
+          });
           return (
             <li class={{ file_diff_item: true, active: this.activeIndex === i }}><a href="javascript:;" onClick={this.onFileClick.bind(this, entry, i)}>{txt}</a>{mark}</li>
           );

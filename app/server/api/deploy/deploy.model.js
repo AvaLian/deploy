@@ -6,6 +6,8 @@ const DeploySchema = new Schema({
   files: Array,
   time: Date,
   operator: String,
+  message: String,
+  commitId: String,
   project: { type: Schema.Types.ObjectId, ref: 'Project' },
   build: { type: Schema.Types.ObjectId, ref: 'Build' }
 });
