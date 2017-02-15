@@ -8,6 +8,7 @@ const BuildSchema = new Schema({
   status: Number, // 编译状态，0 - 编译中；1 - 编译成功；2 - 编译失败
   time: Date,
   operator: String,
+  sourceMap: String, // 编译后文件的对应关系
   project: { type: Schema.Types.ObjectId, ref: 'Project' }
 });
 

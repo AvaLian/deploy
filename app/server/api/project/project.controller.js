@@ -10,7 +10,7 @@ import { addBuildRecord } from '../build/build.controller.js';
 import { findDirDiffByBuildId, changeDirDiffByBuildId } from '../dirDiff/dirDiff.controller.js';
 import { findFileDiffByBuildId, changeFileDiffByBuildId } from '../fileDiff/fileDiff.controller.js';
 import config from '../../config';
-import { regexps, transform2DataURI, checksum } from '../../utils';
+import { regexps, transform2DataURI, checksum, readJsonFile } from '../../utils';
 
 async function getNewestRepo (repo, repoPath) {
   let res = 0; // 0 表示拉取成功
@@ -170,12 +170,24 @@ export async function buildProjectById (ctx) {
         errorLine = i;
       }
     });
+    const appConf = require(path.join(sourceRepoPath, 'app-conf.js'));
+    const moduleList = appConf.moduleList;
+    let sourceMap = {};
+    moduleList.forEach(item => {
+      const mPath = path.join(sourceRepoPath, item);
+      const mapJsonPath = path.join(mPath, 'dist', 'map.json');
+      const mapJson = readJsonFile(mapJsonPath);
+      sourceMap[item] = mapJson
+    });
+    sourceMap = JSON.stringify(sourceMap);
+
     const buildEndTime = new Date().getTime();
     const buildRecord = {
       record: buildLog,
       status: buildStatus,
       errorLine: errorLine,
       operator: '',
+      sourceMap,
       project: project._id
     };
     const newBuild = await addBuildRecord(buildRecord);

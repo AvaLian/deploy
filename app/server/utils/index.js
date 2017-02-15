@@ -1,5 +1,5 @@
 import path from 'path';
-import fs from 'fs';
+import fse from 'fs-extra';
 import crypto from 'crypto';
 
 export const regexps = {
@@ -17,9 +17,22 @@ export function checksum (buf, length) {
 export function transform2DataURI (filename) {
   let uri;
   try {
-    uri = 'data:image/' + path.extname(filename).substr(1) + ';base64,' + fs.readFileSync(filename).toString('base64');
+    uri = 'data:image/' + path.extname(filename).substr(1) + ';base64,' + fse.readFileSync(filename).toString('base64');
   } catch (e) {
     uri = filename;
   }
   return uri;
+}
+
+export function readJsonFile (fPath) {
+  let json = {};
+  if (fse.existsSync(fPath)) {
+    try {
+      json = JSON.parse(fse.readFileSync(fPath));
+    } catch (ex) {
+      console.log(chalk.red('读取文件' + fPath + '失败...！文件可能不存在，或有语法错误，请检查！'));
+      json = {};
+    }
+  }
+  return json;
 }
