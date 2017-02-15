@@ -43,13 +43,18 @@ export async function addDeployInfoByProjectId (ctx) {
   try {
     // 将文件拷贝到上线池中
     const deployFiles = files.map(item => {
-      const filePath = path.join(lastBuildResultDir, item.fullname);
-      const onlineFilePath = path.join(onlineRepoDir, item.fullname);
+      const fullname = item.fullname;
+      const filePath = path.join(lastBuildResultDir, fullname);
+      const onlineFilePath = path.join(onlineRepoDir, fullname);
       if (fse.existsSync(filePath)) {
-        fse.copySync(filePath, path.join(onlineRepoDir, item.fullname));
-        return onlineFilePath;
+        fse.copySync(filePath, path.join(onlineRepoDir, fullname));
+        return item;
       }
     }).filter(item => item);
+    const deployFilePaths = deployFiles.map(item => {
+      const fullname = item.fullname;
+      return path.join(onlineRepoDir, fullname);
+    });
     let res = 0;
     // 源码池最新提交
     const sourceLog = await new Promise((resolve, reject) => {
@@ -72,7 +77,7 @@ export async function addDeployInfoByProjectId (ctx) {
     }
     // 提交上线池，并打上tag
     const deployLog = await new Promise((resolve, reject) => {
-      simpleGit(onlineRepoDir).add(deployFiles, err => {
+      simpleGit(onlineRepoDir).add(deployFilePaths, err => {
         if (err) {
           res = 1;
           return reject(err);

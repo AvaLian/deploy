@@ -5,9 +5,9 @@
         {{item.message}}<span class="deploy_item_time">{{item.time | fomatDate}}</span>
       </template>
       <div class="deploy_item_info">
-        <div><span class="deploy_item_info_operator">操作人：{{item.operator}}</span><span>md5：<a :href="project.onlineRepo" target="_blank">{{item.commitId}}</a></span></div>
+        <div><span class="deploy_item_info_operator"><strong class="deploy_item_info_title">操作人：</strong>{{item.operator}}</span><span><strong class="deploy_item_info_title">提交md5：</strong><a :href="project.onlineRepo" target="_blank">{{item.commitId}}</a></span></div>
         <div v-show="item.files.length">
-          <p>改动文件：</p>
+          <p><strong class="deploy_item_info_title">改动文件：</strong></p>
           <ul>
             <li v-for="file in item.files">{{ stateTypes[file.state] }}文件：{{file.fullname}}</li>
           </ul>
