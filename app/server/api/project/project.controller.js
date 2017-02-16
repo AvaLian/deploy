@@ -296,42 +296,46 @@ export async function getOnlineDiff (ctx) {
               if (next && next.removed) {
                 current.both = true;
                 next.both = true;
-                charsDiff = jsdiff.diffChars(next.value, current.value);
-                let nextCharsCollection = [];
-                let currentCharsCollection = [];
-                charsDiff.forEach(s => {
-                  if (s.added) {
-                    currentCharsCollection.push(`<span class="char_highlight added">${s.value}</span>`);
-                  } else if (s.removed) {
-                    nextCharsCollection.push(`<span class="char_highlight removed">${s.value}</span>`);
-                  } else if (!s.added && !s.removed) {
-                    nextCharsCollection.push(s.value);
-                    currentCharsCollection.push(s.value);
-                  }
-                });
-                next.value = nextCharsCollection.join('');
-                current.value = currentCharsCollection.join('');
+                if (current.count === next.count) {
+                  charsDiff = jsdiff.diffChars(next.value, current.value);
+                  let nextCharsCollection = [];
+                  let currentCharsCollection = [];
+                  charsDiff.forEach(s => {
+                    if (s.added) {
+                      currentCharsCollection.push(`<span class="char_highlight added">${s.value}</span>`);
+                    } else if (s.removed) {
+                      nextCharsCollection.push(`<span class="char_highlight removed">${s.value}</span>`);
+                    } else if (!s.added && !s.removed) {
+                      nextCharsCollection.push(s.value);
+                      currentCharsCollection.push(s.value);
+                    }
+                  });
+                  next.value = nextCharsCollection.join('');
+                  current.value = currentCharsCollection.join('');
+                }
               }
             } else if (current.removed && !current.both) {
               diffInfo.total += 1;
               if (next && next.added) {
                 current.both = true;
                 next.both = true;
-                charsDiff = jsdiff.diffChars(current.value, next.value);
-                let nextCharsCollection = [];
-                let currentCharsCollection = [];
-                charsDiff.forEach(s => {
-                  if (s.added) {
-                    nextCharsCollection.push(`<span class="char_highlight added">${s.value}</span>`);
-                  } else if (s.removed) {
-                    currentCharsCollection.push(`<span class="char_highlight removed">${s.value}</span>`);
-                  } else if (!s.added && !s.removed) {
-                    nextCharsCollection.push(s.value);
-                    currentCharsCollection.push(s.value);
-                  }
-                });
-                next.value = nextCharsCollection.join('');
-                current.value = currentCharsCollection.join('');
+                if (current.count === next.count) {
+                  charsDiff = jsdiff.diffChars(current.value, next.value);
+                  let nextCharsCollection = [];
+                  let currentCharsCollection = [];
+                  charsDiff.forEach(s => {
+                    if (s.added) {
+                      nextCharsCollection.push(`<span class="char_highlight added">${s.value}</span>`);
+                    } else if (s.removed) {
+                      currentCharsCollection.push(`<span class="char_highlight removed">${s.value}</span>`);
+                    } else if (!s.added && !s.removed) {
+                      nextCharsCollection.push(s.value);
+                      currentCharsCollection.push(s.value);
+                    }
+                  });
+                  next.value = nextCharsCollection.join('');
+                  current.value = currentCharsCollection.join('');
+                }
               }
             }
           }

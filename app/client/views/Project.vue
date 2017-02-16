@@ -140,8 +140,10 @@
         if (diffSet.length === 1 && diffSet[0].count === 0 && diffSet[0].value === '') {
           res = [{code: '', different: true}];
         } else {
-          diffSet.forEach(item => {
+          diffSet.forEach((item, i) => {
             let value = item.value;
+            const prev = diffSet[i - 1];
+            const next = diffSet[i + 1];
             if (item.type === 'image') {
               value = `<img src="${DOMAIN}${value}" />`;
             } else if (item.type === 'media') {
@@ -149,7 +151,14 @@
             }
             value = value.split('\n');
             if (!item.removed && item.added) {
-              res = res.concat(value.map(s => ({code: s, different: true, type: 'added'})).filter(i => i.code));
+              value = value.map(s => ({code: s, different: true, type: 'added'})).filter(i => i.code);
+              if (item.both && prev && prev.removed && prev.both && prev.count > item.count) {
+                const countDiff = prev.count - item.count;
+                for (let i = 0; i < countDiff; i ++) {
+                  value.push({code: '', different: true, type: 'added'});
+                }
+              }
+              res = res.concat(value);
             } else if (!item.removed && !item.added) {
               res = res.concat(value.map(s => ({code: s, different: false})).filter(i => i.code));
             } else if (item.removed && !item.added && !item.both) {
@@ -166,8 +175,9 @@
         if (diffSet.length === 1 && diffSet[0].count === 0 && diffSet[0].value === '') {
           res = [{code: '', different: true}];
         } else {
-          diffSet.forEach(item => {
+          diffSet.forEach((item, i) => {
             let value = item.value;
+            const next = diffSet[i + 1];
             if (item.type === 'image') {
               value = `<img src="${DOMAIN}${value}" />`;
             } else if (item.type === 'media') {
@@ -175,7 +185,14 @@
             }
             value = value.split('\n');
             if (item.removed && !item.added) {
-              res = res.concat(value.map(s => ({code: s, different: true, type: 'removed'})).filter(i => i.code));
+              value = value.map(s => ({code: s, different: true, type: 'removed'})).filter(i => i.code);
+              if (item.both && next && next.added && next.both && next.count > item.count) {
+                const countDiff = next.count - item.count;
+                for (let i = 0; i < countDiff; i ++) {
+                  value.push({code: '', different: true, type: 'removed'});
+                }
+              }
+              res = res.concat(value);
             } else if (!item.removed && !item.added) {
               res = res.concat(value.map(s => ({code: s, different: false})).filter(i => i.code));
             } else if (!item.removed && item.added && !item.both) {
