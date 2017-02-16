@@ -71,13 +71,8 @@ const actions = {
     commit(GET_PROJECT, { project: res.body.data});
   },
 
-  async getSourceRepoInfo ({ commit }, { id, sourceRepo, name }) {
-    const res = await Vue.http.get(`${INTERFACE.PROJECTS}/${id}/source`, {
-      params: {
-        sourceRepo,
-        name
-      }
-    });
+  async getSourceRepoInfo ({ commit }, { id}) {
+    const res = await Vue.http.get(`${INTERFACE.PROJECTS}/${id}/source`);
     commit(GET_SOURCE_REPO_INFO, { sourceRepoInfo: res.body.data});
   },
 

@@ -39,7 +39,7 @@ async function getNewestRepo (repo, repoPath) {
         }
         resolve();
       });
-    }).catch((err) => console.log(err));
+    }).catch(err => console.log(err));
   }
   return res;
 }
@@ -92,13 +92,13 @@ export async function getProjectById (ctx) {
 
 export async function getSourceRepoInfoById (ctx) {
   const params = ctx.params;
-  const query = ctx.query;
   const id = params.id;
-  const name = query.name;
-  const sourceRepo = query.sourceRepo;
   try {
+    let project = await Project.findById(id);
     const repoDir = path.join(config.root, config.repoDir, id);
     fse.ensureDirSync(repoDir);
+    const sourceRepo = project.sourceRepo;
+    const name = project.name;
     const sourceRepoPath = path.join(repoDir, `${id}_source`);
     let getNewResult = await getNewestRepo(sourceRepo, sourceRepoPath);
     if (getNewResult === 1) {
@@ -115,11 +115,9 @@ export async function getSourceRepoInfoById (ctx) {
         }
         resolve(log);
       });
-    }).catch(function (err) {
-      console.log(err);
-    });
+    }).catch(err => console.log(err));
     let lastCommit = {};
-    if (log) {
+    if (log && log.latest) {
       const latest = log.latest;
       lastCommit.message = latest.message;
       lastCommit.author = latest.author_name;
@@ -132,14 +130,14 @@ export async function getSourceRepoInfoById (ctx) {
       sourceRepo: sourceRepo,
       lastCommit: lastCommit
     };
+    if (lastCommit.hash !== project.lastCommitHash) {
+      project.lastCommitHash = lastCommit.hash;
+      await project.save();
+    }
     ctx.body = { errCode: 0, errMsg: 'success', data: result };
   } catch (err) {
     ctx.throw(422, err.message);
   }
-}
-
-export async function getOnlineRepoInfoById (ctx) {
-  // TODO
 }
 
 export async function buildProjectById (ctx) {
@@ -188,7 +186,8 @@ export async function buildProjectById (ctx) {
       errorLine: errorLine,
       operator: '',
       sourceMap,
-      project: project._id
+      project: project._id,
+      lastCommitHash: project.lastCommitHash
     };
     const newBuild = await addBuildRecord(buildRecord);
     project.lastBuildDate = new Date;

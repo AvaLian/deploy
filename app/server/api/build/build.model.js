@@ -9,6 +9,7 @@ const BuildSchema = new Schema({
   time: Date,
   operator: String,
   sourceMap: String, // 编译后文件的对应关系
+  lastCommitHash: String, // 上一次提交md5校验码
   project: { type: Schema.Types.ObjectId, ref: 'Project' }
 });
 

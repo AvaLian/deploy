@@ -25,7 +25,7 @@
             </ul>
           </div>
           <div class="project_operate">
-            <p v-if="project.buildStatus === 1"><el-button class="project_diffbtn" type="primary" @click="projectDiff" :loading="isBuilding">代码diff</el-button></p>
+            <p v-if="project.buildStatus === 1 && sourceRepoInfo.lastCommit && buildRecord.lastCommitHash === sourceRepoInfo.lastCommit.hash"><el-button class="project_diffbtn" type="primary" @click="projectDiff" :loading="isBuilding">代码diff</el-button></p>
             <p v-if="project.buildStatus === 1 && canDoDeploy"><el-button class="project_onlinebtn" type="primary" @click="projectDeploy">上线</el-button></p>
           </div>
         </div>
@@ -326,7 +326,7 @@
         const project = this.project;
         if (this.activeTabName === 'sourceRepo') { // 拉取源码库相关信息
           this.isSourceRepoInfoLoading = true;
-          await this.getSourceRepoInfo({ id: project._id, sourceRepo: project.sourceRepo, name: project.name });
+          await this.getSourceRepoInfo({ id: project._id });
           this.isSourceRepoInfoLoading = false;
         } else {
           this.isOnlineRepoInfoLoading = true;

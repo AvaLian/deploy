@@ -11,6 +11,7 @@ const ProjectSchema = new Schema({
   sourceRepo: { type: String, required: true },
   onlineRepo: { type: String, required: true }, // 上线资源池
   lastBuildId: { type: Schema.Types.ObjectId, ref: 'Build' },
+  lastCommitHash: String, // 上一次提交md5校验码
   lastBuildDate: Date,
   excludeDirs: Array,  // diff时可以忽略的目录
   buildDuration: Number,

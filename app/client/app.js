@@ -17,6 +17,11 @@ Object.keys(filters).forEach((key) => {
   Vue.filter(key, filters[key])
 });
 
+Vue.http.interceptors.push((request, next) => {
+  request.url += (request.url.indexOf('?') > 0 ? '&' : '?') + `_=${new Date().getTime()}`;
+  next();
+});
+
 const app = new Vue({
   router,
   store,
