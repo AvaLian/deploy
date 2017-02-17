@@ -8,6 +8,7 @@ const ProjectSchema = new Schema({
   alias: String,
   desciption: String,
   createTime: Date,
+  owners: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   sourceRepo: { type: String, required: true },
   onlineRepo: { type: String, required: true }, // 上线资源池
   lastBuildId: { type: Schema.Types.ObjectId, ref: 'Build' },

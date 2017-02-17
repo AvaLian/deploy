@@ -5,7 +5,7 @@ const Schema = mongoose.Schema;
 const DeploySchema = new Schema({
   files: Array,
   time: Date,
-  operator: String,
+  operator: { type: Schema.Types.ObjectId, ref: 'User' },
   message: String,
   commitId: String,
   project: { type: Schema.Types.ObjectId, ref: 'Project' },
