@@ -3,6 +3,7 @@ import { INTERFACE } from '../../config';
 
 const GET_DEPLOY_HISTORY = 'GET_DEPLOY_HISTORY';
 const GET_DEPLOY_INFO = 'GET_DEPLOY_INFO';
+const INIT_PROJECT_INFO = 'INIT_PROJECT_INFO';
 
 const state = {
   deployInfo: {
@@ -19,6 +20,9 @@ const mutations = {
   },
   [GET_DEPLOY_HISTORY] (state, { projectId, deployHistory }) {
     Vue.set(state.deployHistory, projectId, deployHistory);
+  },
+  [INIT_PROJECT_INFO] (state, { projectId }) {
+    Vue.set(state.deployInfo, projectId, {});
   }
 };
 
@@ -42,6 +46,10 @@ const actions = {
   async getProjectDeployList ({ commit }, { projectId }) {
     const res = await Vue.http.get(`${INTERFACE.DEPLOYS}/project/${projectId}`);
     commit(GET_DEPLOY_HISTORY, { projectId, deployHistory: res.body.data });
+  },
+
+  initProjectDeployInfo ({ commit }, { projectId }) {
+    commit(INIT_PROJECT_INFO, { projectId });
   }
 };
 

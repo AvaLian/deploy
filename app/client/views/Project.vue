@@ -256,6 +256,7 @@
         'addMark',
         'removeMark',
         'deploy',
+        'initProjectDeployInfo',
         'getProjectBuildDeployInfo',
         'getProjectDeployList'
       ]),
@@ -266,6 +267,7 @@
         this.isBuilding = true;
         await this.buildProject({ id });
         this.isBuilding = false;
+        this.initProjectDeployInfo({ id });
         this.modifyProjectBuildCount({ count: this.project.buildCount + 1 });
         this.modifyProjectBuildStatus({ status: this.buildRecord.status });
       },
@@ -283,7 +285,7 @@
           buildId
         });
         const currentBuildMark = this.codeMark[buildId];
-        if (currentBuildMark) {
+        if (currentBuildMark && !isEmptyObject(currentBuildMark)) {
           let markedFileCount = 0;
           this.dirDiffSet.forEach(item => {
             let fullname = item.fullname;
@@ -300,6 +302,14 @@
               cancelButtonText: '取消',
               type: 'success'
             }).then(this.goToDeploy);
+          }
+        } else {
+          if (this.needDiffFileCount === 0) {
+            this.$confirm('没有文件差异！', '提示', {
+              confirmButtonText: '确定',
+              cancelButtonText: '取消',
+              type: 'success'
+            }).then(() => this.showDirDiffDialog = false);
           }
         }
         this.isDirDiffLoading = false;
