@@ -2,7 +2,7 @@ import Vue from 'vue';
 import { INTERFACE } from '../../config';
 
 const GET_DEPLOY_HISTORY = 'GET_DEPLOY_HISTORY';
-const DO_DEPLOY = 'DO_DEPLOY';
+const GET_DEPLOY_INFO = 'GET_DEPLOY_INFO';
 
 const state = {
   deployInfo: {
@@ -14,7 +14,7 @@ const state = {
 };
 
 const mutations = {
-  [DO_DEPLOY] (state, { projectId, deployInfo }) {
+  [GET_DEPLOY_INFO] (state, { projectId, deployInfo }) {
     Vue.set(state.deployInfo, projectId, deployInfo);
   },
   [GET_DEPLOY_HISTORY] (state, { projectId, deployHistory }) {
@@ -30,8 +30,13 @@ const actions = {
     });
     const body = res.body;
     if (body.errCode === 0) {
-      commit(DO_DEPLOY, { projectId, deployInfo: body.data });
+      commit(GET_DEPLOY_INFO, { projectId, deployInfo: body.data });
     }
+  },
+
+  async getProjectBuildDeployInfo ({ commit }, { projectId, buildId }) {
+    const res = await Vue.http.get(`${INTERFACE.DEPLOYS}/project/${projectId}/build/${buildId}`);
+    commit(GET_DEPLOY_INFO, { projectId, deployInfo: res.body.data });
   },
 
   async getProjectDeployList ({ commit }, { projectId }) {

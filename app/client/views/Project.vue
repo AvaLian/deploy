@@ -26,7 +26,10 @@
           </div>
           <div class="project_operate">
             <p v-if="project.buildStatus === 1 && sourceRepoInfo.lastCommit && buildRecord.lastCommitHash === sourceRepoInfo.lastCommit.hash"><el-button class="project_diffbtn" type="primary" @click="projectDiff" :loading="isBuilding">代码diff</el-button></p>
-            <p v-if="project.buildStatus === 1 && canDoDeploy"><el-button class="project_onlinebtn" type="primary" @click="projectDeploy">上线</el-button></p>
+            <p v-if="project.buildStatus === 1">
+              <el-button class="project_onlinebtn" type="primary" @click="projectDeploy" v-if="!hasDeployed && canDoDeploy">上线</el-button>
+              <span class="project_onlinetxt" v-if="hasDeployed">本次编译结果已经发布成功</span>
+            </p>
           </div>
         </div>
         <div class="project_log" v-show="!isSourceRepoInfoLoading">
@@ -71,7 +74,7 @@
           <FileList :files="preOnlineFiles" @toggleFileChoose="onToggleFileChoose"></FileList>
         </div>
         <span slot="footer" class="dialog-footer">
-          <el-button @click="showDeployDialog = false">取 消</el-button>
+          <el-button @click="showDeployDialog = false">取消</el-button>
           <el-button class="deploy_confirm" type="primary" @click="doDeploy" :loading="idDeploying">确定</el-button>
         </span>
       </div>
@@ -228,6 +231,9 @@
 
       currentDeployHistory () {
         return this.deployHistory[this.project._id];
+      },
+      hasDeployed () {
+        return !!this.deployInfo[this.project._id];
       }
     },
 
@@ -250,6 +256,7 @@
         'addMark',
         'removeMark',
         'deploy',
+        'getProjectBuildDeployInfo',
         'getProjectDeployList'
       ]),
 
@@ -463,11 +470,12 @@
           }
         }
       },
-      isSourceRepoInfoLoading (val) {
+      async isSourceRepoInfoLoading (val) {
         if (!val) {
           // 拉取上一次编译log
           const id = this.$route.params.id;
-          this.getBuildRecord({ id });
+          await this.getBuildRecord({ id });
+          this.getProjectBuildDeployInfo({ projectId: this.project._id, buildId: this.buildRecord._id });
         }
       }
     }
@@ -591,5 +599,9 @@
   }
   .diff_deploy {
     margin-bottom: 12px;
+  }
+  .project_onlinetxt {
+    font-size: 12px;
+    color: #13CE66;
   }
 </style>
