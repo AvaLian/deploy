@@ -6,4 +6,5 @@ export const INTERFACE = {
   PROJECT_BUILDS: `${DOMAIN}/api/builds/project`,
   MARKS: `${DOMAIN}/api/marks`,
   DEPLOYS: `${DOMAIN}/api/deploys`,
+  LOGS: `${DOMAIN}/api/logs`
 }

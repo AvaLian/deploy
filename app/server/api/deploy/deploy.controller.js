@@ -2,8 +2,9 @@ import fse from 'fs-extra';
 import path from 'path';
 import shelljs from 'shelljs';
 import simpleGit from 'simple-git';
-import Deploy from './deploy.model.js';
-import Project from '../project/project.model.js';
+import Deploy from './deploy.model';
+import Project from '../project/project.model';
+import { createLog } from '../log/log.controller';
 import config from '../../config';
 
 export async function getDeplyInfoById (ctx) {
@@ -104,6 +105,11 @@ export async function addDeployInfoByProjectId (ctx) {
       commitId = deployLog.latest.hash;
     }
     if (res !== 0) {
+      // 上线操作写入操作日志中
+      await createLog(pid, 'deploy', JSON.stringify({
+        record: [],
+        status: res
+      }));
       ctx.body = { errCode: 2, errMsg: '内部出错，请重试！' };
       return;
     }
@@ -111,13 +117,17 @@ export async function addDeployInfoByProjectId (ctx) {
     const deploy = new Deploy({
       build: bid,
       project: pid,
-      operator: '',
       time: new Date(),
       commitId,
       message,
       files: deployFiles
     });
     deploy.save();
+    // 上线操作写入操作日志中
+    await createLog(pid, 'deploy', JSON.stringify({
+      record: deployFiles,
+      status: res
+    }));
     ctx.body = { errCode: 0, errMsg: 'success', data: deploy };
   } catch (err) {
     ctx.throw(422, err.message);

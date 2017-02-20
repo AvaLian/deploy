@@ -37,10 +37,13 @@
           <div v-show="isBuilding || projectBuildStatus === 0">正在编译中...</div>
         </div>
       </el-tab-pane>
-      <el-tab-pane label="上线仓库" name="onlineRepo" v-loading="isOnlineRepoInfoLoading">
+      <el-tab-pane label="上线仓库" name="onlineRepo" v-loading="isOnlineRepoInfoLoading" element-loading-text="拼命加载数据中">
         <div class="online_info">
           <deploy-list :list="currentDeployHistory" :project="project"></deploy-list>
         </div>
+      </el-tab-pane>
+      <el-tab-pane label="操作日志" name="operateLog" v-loading="isProjectOperateLogLoading" element-loading-text="拼命加载数据中">
+        <log-list :logList="projectLogs"></log-list>
       </el-tab-pane>
     </el-tabs>
     <el-dialog class="diff_dialog" title="代码diff" v-model="showDirDiffDialog" size="full">
@@ -91,6 +94,7 @@
   import CodeShow from '../components/CodeShow';
   import FileList from '../components/FileList';
   import DeployList from '../components/DeployList';
+  import LogList from '../components/LogList';
   import router from '../router';
   import { DOMAIN } from '../config';
 
@@ -112,7 +116,8 @@
         preOnlineFiles: [],
         choosedOnlineFiles: [],
         isDeploying: false,
-        isOnlineRepoInfoLoading: false
+        isOnlineRepoInfoLoading: false,
+        isProjectOperateLogLoading: false
       }
     },
 
@@ -121,7 +126,8 @@
       DiffList,
       CodeShow,
       FileList,
-      DeployList
+      DeployList,
+      LogList
     },
 
     computed: {
@@ -134,7 +140,8 @@
         'fileDiff',
         'codeMark',
         'deployInfo',
-        'deployHistory'
+        'deployHistory',
+        'projectLogs'
       ]),
 
       canBuild () {
@@ -273,7 +280,8 @@
         'deploy',
         'initProjectDeployInfo',
         'getProjectBuildDeployInfo',
-        'getProjectDeployList'
+        'getProjectDeployList',
+        'getProjectLogs'
       ]),
 
       async buildProjectById () {
@@ -361,10 +369,14 @@
           this.isSourceRepoInfoLoading = true;
           await this.getSourceRepoInfo({ id: project._id });
           this.isSourceRepoInfoLoading = false;
-        } else {
+        } else if (this.activeTabName === 'onlineRepo') {
           this.isOnlineRepoInfoLoading = true;
           await this.getProjectDeployList({ projectId: project._id });
           this.isOnlineRepoInfoLoading = false;
+        } else if (this.activeTabName === 'operateLog') {
+          this.isProjectOperateLogLoading = true;
+          await this.getProjectLogs({ projectId: project._id });
+          this.isProjectOperateLogLoading = false;
         }
       },
 

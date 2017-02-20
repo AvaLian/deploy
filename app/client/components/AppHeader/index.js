@@ -21,9 +21,9 @@ export default {
           exact: false
         },
         {
-          type: 'records',
-          link: '/records',
-          name: '操作记录',
+          type: 'logs',
+          link: '/logs',
+          name: '操作日志',
           exact: false
         }
       ]

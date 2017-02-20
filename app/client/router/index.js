@@ -3,6 +3,7 @@ import Router from 'vue-router';
 import Home from '../views/Home';
 import Projects from '../views/Projects';
 import Project from '../views/Project';
+import Log from '../views/Log';
 
 Vue.use(Router);
 
@@ -35,7 +36,14 @@ const router =  new Router({
       meta: {
         title: '统一上线平台 - 项目详情'
       }
-    }
+    },
+    {
+      path: '/logs',
+      component: Log,
+      meta: {
+        title: '统一上线平台 - 操作日志'
+      }
+    },
   ]
 });
 

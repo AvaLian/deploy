@@ -18,7 +18,7 @@ export async function createLog (project, type, info) {
 
 export async function getAllLogs (ctx) {
   try {
-    const logs = await LogModel.find().populate('user').sort({'time': 'desc'});
+    const logs = await LogModel.find().populate('user').populate('project').sort({'time': 'desc'});
     ctx.body = { errCode: 0, errMsg: 'success', data: logs };
   } catch (err) {
     ctx.throw(422, err.message);
@@ -28,7 +28,7 @@ export async function getAllLogs (ctx) {
 export async function getProjectLogs (ctx) {
   const project = ctx.params.pid;
   try {
-    const logs = await LogModel.find({ project }).populate('user').sort({'time': 'desc'});
+    const logs = await LogModel.find({ project }).populate('user').populate('project').sort({'time': 'desc'});
     ctx.body = { errCode: 0, errMsg: 'success', data: logs };
   } catch (err) {
     ctx.throw(422, err.message);

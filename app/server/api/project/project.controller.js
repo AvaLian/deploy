@@ -5,10 +5,11 @@ import simpleGit from 'simple-git';
 import jsBeautify from 'js-beautify';
 import hljs from 'highlight.js';
 
-import Project from './project.model.js';
-import { addBuildRecord } from '../build/build.controller.js';
-import { findDirDiffByBuildId, changeDirDiffByBuildId } from '../dirDiff/dirDiff.controller.js';
-import { findFileDiffByBuildId, changeFileDiffByBuildId } from '../fileDiff/fileDiff.controller.js';
+import Project from './project.model';
+import { addBuildRecord } from '../build/build.controller';
+import { findDirDiffByBuildId, changeDirDiffByBuildId } from '../dirDiff/dirDiff.controller';
+import { findFileDiffByBuildId, changeFileDiffByBuildId } from '../fileDiff/fileDiff.controller';
+import { createLog } from '../log/log.controller';
 import config from '../../config';
 import { regexps, transform2DataURI, checksum, readJsonFile } from '../../utils';
 
@@ -183,7 +184,7 @@ export async function buildProjectById (ctx) {
         const mPath = path.join(sourceRepoPath, item);
         const mapJsonPath = path.join(mPath, 'dist', 'map.json');
         const mapJson = readJsonFile(mapJsonPath);
-        sourceMap[item] = mapJson
+        sourceMap[item] = mapJson;
       });
     }
     sourceMap = JSON.stringify(sourceMap);
@@ -205,6 +206,12 @@ export async function buildProjectById (ctx) {
     project.buildCount++;
     project.lastBuildId = newBuild._id;
     await project.save();
+    // 编译操作写入操作日志中
+    await createLog(project._id, 'build', JSON.stringify({
+      record: buildLogArr,
+      status: buildStatus
+    }));
+
     // 编译完后需要移出到根目录
     shelljs.cd(config.root);
     ctx.body = {
