@@ -2,11 +2,11 @@
   <section class="project">
     <header class="project_header clearfix">
       <h3 class="project_title"><a :href="project.sourceRepo" target="_blank">{{project.name}}</a></h3>
-      <el-button class="project_buildbtn" type="primary" @click="buildProjectById" :loading="isBuilding">编译项目</el-button>
+      <el-button class="project_buildbtn" type="primary" @click="buildProjectById" :loading="isBuilding || projectBuildStatus === 0" v-show="canBuild">编译项目</el-button>
     </header>
     <el-tabs class="project_tab" :active-name="activeTabName" @tab-click="changeTab">
       <el-tab-pane label="源码仓库" name="sourceRepo" v-loading="isSourceRepoInfoLoading" element-loading-text="拼命加载数据中">
-        <div :class="{ project_info: true, passed: project.buildStatus === 1, failed: project.buildStatus === 2, building: project.buildStatus === 0 }">
+        <div :class="{ project_info: true, passed: projectBuildStatus === 1, failed: projectBuildStatus === 2, building: projectBuildStatus === 0 }">
           <div class="project_commit">
             <h4 class="project_commit_last">
               <span class="project_commit_last_txt">{{sourceRepoInfo.lastCommit.message}}</span>
@@ -25,16 +25,16 @@
             </ul>
           </div>
           <div class="project_operate">
-            <p v-if="project.buildStatus === 1 && sourceRepoInfo.lastCommit && buildRecord.lastCommitHash === sourceRepoInfo.lastCommit.hash"><el-button class="project_diffbtn" type="primary" @click="projectDiff" :loading="isBuilding">代码diff</el-button></p>
-            <p v-if="project.buildStatus === 1">
+            <p v-if="projectBuildStatus === 1 && sourceRepoInfo.lastCommit && buildRecord.lastCommitHash === sourceRepoInfo.lastCommit.hash"><el-button class="project_diffbtn" type="primary" @click="projectDiff" :loading="isBuilding || projectBuildStatus === 0">代码diff</el-button></p>
+            <p v-if="projectBuildStatus === 1">
               <el-button class="project_onlinebtn" type="primary" @click="projectDeploy" v-if="!hasDeployed && canDoDeploy">上线</el-button>
               <span class="project_onlinetxt" v-if="hasDeployed">本次编译结果已经发布成功</span>
             </p>
           </div>
         </div>
         <div class="project_log" v-show="!isSourceRepoInfoLoading">
-          <build-record :buildRecord="buildRecord" v-show="!isBuilding"></build-record>
-          <div v-show="isBuilding">正在编译中...</div>
+          <build-record :buildRecord="buildRecord" v-show="!isBuilding && projectBuildStatus !== 0"></build-record>
+          <div v-show="isBuilding || projectBuildStatus === 0">正在编译中...</div>
         </div>
       </el-tab-pane>
       <el-tab-pane label="上线仓库" name="onlineRepo" v-loading="isOnlineRepoInfoLoading">
@@ -45,7 +45,7 @@
     </el-tabs>
     <el-dialog class="diff_dialog" title="代码diff" v-model="showDirDiffDialog" size="full">
       <div v-loading="isDirDiffLoading" class="diff_container">
-        <div class="diff_deploy" v-if="project.buildStatus === 1 && canDoDeploy">
+        <div class="diff_deploy" v-if="projectBuildStatus === 1 && canDoDeploy">
           <el-button class="diff_deploy_btn" type="primary" @click="goToDeploy">上线</el-button>
         </div>
         <div class="diff_files">
@@ -75,7 +75,7 @@
         </div>
         <span slot="footer" class="dialog-footer">
           <el-button @click="showDeployDialog = false">取消</el-button>
-          <el-button class="deploy_confirm" type="primary" @click="doDeploy" :loading="idDeploying">确定</el-button>
+          <el-button class="deploy_confirm" type="primary" @click="doDeploy" :loading="isDeploying">确定</el-button>
         </span>
       </div>
     </el-dialog>
@@ -111,7 +111,7 @@
         showDeployDialog: false,
         preOnlineFiles: [],
         choosedOnlineFiles: [],
-        idDeploying: false,
+        isDeploying: false,
         isOnlineRepoInfoLoading: false
       }
     },
@@ -136,6 +136,20 @@
         'deployInfo',
         'deployHistory'
       ]),
+
+      canBuild () {
+        const project = this.project;
+        return project && !isEmptyObject(project) && project.buildStatus !== -1;
+      },
+
+      projectBuildStatus () {
+        const buildRecord = this.buildRecord;
+        if (buildRecord && !isEmptyObject(buildRecord)) {
+          return this.buildRecord.status;
+        } else {
+          return this.project.buildStatus;
+        }
+      },
 
       leftFileCode () {
         const diffSet = this.fileDiff.diffSet;
@@ -246,6 +260,7 @@
         'getOnlineRepoInfo',
         'buildProject',
         'getBuildRecord',
+        'initBuildRecord',
         'modifyProjectBuildStatus',
         'modifyProjectBuildCount',
         'getDiff',
@@ -264,6 +279,7 @@
       async buildProjectById () {
         const id = this.$route.params.id;
         this.modifyProjectBuildStatus({ status: 0 });
+        this.initBuildRecord();
         this.isBuilding = true;
         await this.buildProject({ id });
         this.isBuilding = false;
@@ -386,9 +402,9 @@
         const projectId = this.project._id;
         const buildId = this.buildRecord._id;
         const files = this.choosedOnlineFiles;
-        this.idDeploying = true;
+        this.isDeploying = true;
         await this.deploy({ projectId, buildId, files });
-        this.idDeploying = false;
+        this.isDeploying = false;
         if (this.deployInfo[projectId]) {
           this.showDeployDialog = false;
           this.$confirm('恭喜，所有改动文件已经发布到上线池中，可以进行上线了！', '提示', {

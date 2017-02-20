@@ -145,6 +145,8 @@ export async function buildProjectById (ctx) {
   try {
     let project = await Project.findById(id);
     let buildStatus = 0; // 开始build
+    project.buildStatus = buildStatus;
+    await project.save();
     const sourceRepo = project.sourceRepo;
     const repoDir = path.join(config.root, config.repoDir, id);
     fse.ensureDirSync(repoDir);
@@ -158,7 +160,7 @@ export async function buildProjectById (ctx) {
     const cd = shelljs.cd(sourceRepoPath);
     // 执行ath编译
     const athBuild = shelljs.exec(`ath build --release`, { silent: true });
-    const buildLog = athBuild.stdout;
+    let buildLog = athBuild.stdout;
     const buildLogArr = buildLog.split('\n');
     let errorLine = -1;
     buildStatus = 1;
@@ -168,17 +170,23 @@ export async function buildProjectById (ctx) {
         errorLine = i;
       }
     });
-    const appConf = require(path.join(sourceRepoPath, 'app-conf.js'));
-    const moduleList = appConf.moduleList;
+    const appConfPath = path.join(sourceRepoPath, 'app-conf.js');
     let sourceMap = {};
-    moduleList.forEach(item => {
-      const mPath = path.join(sourceRepoPath, item);
-      const mapJsonPath = path.join(mPath, 'dist', 'map.json');
-      const mapJson = readJsonFile(mapJsonPath);
-      sourceMap[item] = mapJson
-    });
+    if (!fse.existsSync(appConfPath)) {
+      buildStatus = 2;
+      errorLine = 0;
+      buildLog = '项目app-conf.js文件不存在，无法编译，请检查！';
+    } else {
+      const appConf = require(appConfPath);
+      const moduleList = appConf.moduleList;
+      moduleList.forEach(item => {
+        const mPath = path.join(sourceRepoPath, item);
+        const mapJsonPath = path.join(mPath, 'dist', 'map.json');
+        const mapJson = readJsonFile(mapJsonPath);
+        sourceMap[item] = mapJson
+      });
+    }
     sourceMap = JSON.stringify(sourceMap);
-
     const buildEndTime = new Date().getTime();
     const buildRecord = {
       record: buildLog,

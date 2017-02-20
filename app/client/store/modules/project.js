@@ -28,6 +28,7 @@ const mutations = {
 
   [MODIFY_PROJECT_BUILD_STATUS] (state, { status }) {
     state.project.buildStatus = status;
+    state.buildRecord.status = status;
   },
 
   [MODIFY_PROJECT_BUILD_COUNT] (state, { count }) {
@@ -99,6 +100,10 @@ const actions = {
       buildRecord = data[0];
     }
     commit(PROJECT_BUILD_LOG, { buildRecord });
+  },
+
+  async initBuildRecord ({ commit }) {
+    commit(PROJECT_BUILD_LOG, { buildRecord: {}});
   }
 };
 

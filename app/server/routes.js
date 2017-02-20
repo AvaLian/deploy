@@ -5,6 +5,7 @@ import markRouter from './api/mark';
 import dirDiffRouter from './api/dirDiff';
 import fileDiffRouter from './api/fileDiff';
 import deployRouter from './api/deploy';
+import logRouter from './api/log';
 
 const router = new Router();
 
@@ -14,5 +15,6 @@ router.use('/api/marks', markRouter.routes(), markRouter.allowedMethods());
 router.use('/api/dirDiffs', dirDiffRouter.routes(), dirDiffRouter.allowedMethods());
 router.use('/api/fileDiffs', fileDiffRouter.routes(), fileDiffRouter.allowedMethods());
 router.use('/api/deploys', deployRouter.routes(), deployRouter.allowedMethods());
+router.use('/api/logs', logRouter.routes(), logRouter.allowedMethods());
 
 export default router;
