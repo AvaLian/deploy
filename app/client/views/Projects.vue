@@ -43,6 +43,8 @@
   import { mapGetters, mapActions } from 'vuex';
   import ProjectList from '../components/ProjectList';
 
+  import { isEmptyObject } from '../util';
+
   export default {
     data () {
       return {
@@ -61,9 +63,14 @@
     components: {
       ProjectList
     },
-    computed: mapGetters([
-      'projectList'
-    ]),
+    computed: {
+      firstProject () {
+        return this.projectList[0];
+      },
+      ...mapGetters([
+        'projectList'
+      ])
+    },
     methods: {
       showAddProjectDialog () {
         this.dialogVisible = true;
@@ -75,13 +82,20 @@
         await this.addProject(JSON.parse(JSON.stringify(this.newProject)));
         this.dialogVisible = false;
       },
+      async fetchData () {
+        await this.getProjectList();
+        const params = this.$route.params;
+        if (isEmptyObject(params)) {
+          this.$router.push(`/projectList/${this.firstProject._id}`);
+        }
+      },
       ...mapActions([
         'getProjectList',
         'addProject'
       ])
     },
     mounted () {
-      this.getProjectList();
+      this.fetchData();
     }
   };
 </script>
