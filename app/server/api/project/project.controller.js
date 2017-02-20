@@ -75,10 +75,10 @@ export async function addProject (ctx) {
   const project = new Project(body);
   try {
     await project.save();
+    ctx.body = { errCode: 0, errMsg: 'success', data: project };
   } catch (err) {
     ctx.throw(422, err.message);
   }
-  ctx.body = { errCode: 0, errMsg: 'success' };
 }
 
 export async function getProjectById (ctx) {

@@ -27,7 +27,7 @@ const actions = {
 
   async addProject ({ commit }, project) {
     let res = await Vue.http.post(INTERFACE.ADD_PROJECT, project);
-    commit(ADD_PROJECT, { project });
+    commit(ADD_PROJECT, { project: res.body.data });
   }
 };
 

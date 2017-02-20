@@ -8,27 +8,41 @@
       <router-view></router-view>
     </div>
     <el-dialog title="新增项目" v-model="dialogVisible">
-      <el-form :model="newProject" ref="newProjectForm" label-width="80px">
-        <el-form-item label="类型">
-          <el-input v-model="newProject.type"></el-input>
+      <el-form :model="newProject" :rules="rules" ref="newProjectForm" label-width="100px">
+        <el-form-item label="类型" prop="type">
+          <el-select v-model="newProject.type" placeholder="请选择">
+            <el-option
+              v-for="item in typeOptions"
+              :label="item.label"
+              :value="item.value">
+            </el-option>
+          </el-select>
         </el-form-item>
-        <el-form-item label="英文名称">
-          <el-input v-model="newProject.name"></el-input>
+        <el-form-item label="英文名称" prop="name">
+          <el-input v-model="newProject.name" placeholder="请输入项目英文名"></el-input>
         </el-form-item>
-        <el-form-item label="中文名">
-          <el-input v-model="newProject.alias"></el-input>
+        <el-form-item label="中文名" prop="alias">
+          <el-input v-model="newProject.alias" placeholder="请输入项目中文名"></el-input>
         </el-form-item>
-        <el-form-item label="作者">
-          <el-input v-model="newProject.author"></el-input>
+        <el-form-item label="作者" prop="author">
+          <el-input v-model="newProject.author" :disabled="true"></el-input>
         </el-form-item>
-        <el-form-item label="源码仓库">
-          <el-input v-model="newProject.sourceRepo"></el-input>
+        <el-form-item label="源码仓库" prop="sourceRepo">
+          <el-input v-model="newProject.sourceRepo" placeholder="请输入项目源码仓库地址"></el-input>
         </el-form-item>
-        <el-form-item label="上线仓库">
-          <el-input v-model="newProject.onlineRepo"></el-input>
+        <el-form-item label="上线仓库" prop="onlineRepo">
+          <el-input v-model="newProject.onlineRepo" placeholder="请输入项目上线仓库地址"></el-input>
         </el-form-item>
-        <el-form-item label="简介">
-          <el-input v-model="newProject.description"></el-input>
+        <!--<el-form-item label="项目管理员" prop="repoOwner">
+          <el-input class="input_owner" v-for="(owner, index) in newProject.owners" v-model="newProject.owners[index]"></el-input><el-button type="primary" icon="plus" @click="addOwner"></el-button>
+        </el-form-item>-->
+        <el-form-item label="简介" prop="description">
+          <el-input
+            type="textarea"
+            :rows="3"
+            placeholder="请输入项目简介"
+            v-model="newProject.description">
+          </el-input>
         </el-form-item>
       </el-form>
       <span slot="footer" class="dialog-footer">
@@ -47,8 +61,23 @@
 
   export default {
     data () {
+      const gitRepoReg = new RegExp('((git|ssh|http(s)?)|(git@[\w\.]+))(:(//)?)([\w\.@\:/\-~]+)(\.git)(/)?')
+      const validateRepoAddr = (rule, value, callback) => {
+        if (!gitRepoReg.test(value)) {
+          callback(new Error('请输入正确格式的git地址'));
+        } else {
+          callback();
+        }
+      };
       return {
         dialogVisible: false,
+        typeOptions: [{
+          value: 'channel',
+          label: '频道页'
+        }, {
+          value: 'act',
+          label: '活动页'
+        }],
         newProject: {
           type: '',
           name: '',
@@ -56,7 +85,25 @@
           author: '',
           sourceRepo: '',
           onlineRepo: '',
+          owners: [],
           description: ''
+        },
+        rules: {
+          type: [
+            { required: true, message: '请选择类型', trigger: 'change' }
+          ],
+          name: [
+            { required: true, message: '请输入项目英文名', trigger: 'blur' }
+          ],
+          alias: [
+            { required: true, message: '请输入项目中文名', trigger: 'blur' }
+          ],
+          sourceRepo: [
+            { required: true, validator: validateRepoAddr, trigger: 'blur' }
+          ],
+          onlineRepo: [
+            { required: true, validator: validateRepoAddr, trigger: 'blur' }
+          ]
         }
       }
     },
@@ -73,14 +120,28 @@
     },
     methods: {
       showAddProjectDialog () {
+        const form = this.$refs['newProjectForm'];
+        if (form) {
+          form.resetFields();
+        }
         this.dialogVisible = true;
       },
       hideAddProjectDialog () {
         this.dialogVisible = false;
       },
-      async addProjectSubmit () {
-        await this.addProject(JSON.parse(JSON.stringify(this.newProject)));
-        this.dialogVisible = false;
+      addOwner () {
+        this.newProject.owners.push('');
+      },
+      addProjectSubmit () {
+        this.$refs['newProjectForm'].validate(async valid => {
+          if (valid) {
+            await this.addProject(JSON.parse(JSON.stringify(this.newProject)));
+            this.dialogVisible = false;
+            this.$router.push(`/projectList/${this.firstProject._id}`);
+          } else {
+            return false;
+          }
+        });
       },
       async fetchData () {
         await this.getProjectList();
@@ -125,5 +186,10 @@
   }
   .projects_add {
     margin-left: 12px;
+  }
+  .input_owner {
+    width: 100px;
+    margin-right: 12px;
+    margin-bottom: 12px;
   }
 </style>
