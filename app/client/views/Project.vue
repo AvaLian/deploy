@@ -485,7 +485,10 @@
           // 拉取上一次编译log
           const id = this.$route.params.id;
           await this.getBuildRecord({ id });
-          this.getProjectBuildDeployInfo({ projectId: this.project._id, buildId: this.buildRecord._id });
+          const buildId = this.buildRecord._id;
+          if (buildId) {
+            this.getProjectBuildDeployInfo({ projectId: this.project._id, buildId });
+          }
         }
       }
     }
